@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36" version="29.6.0">
+  <diagram name="Page-1" id="imLytyJjSLRu8NgJtiRW">
+    <mxGraphModel dx="2711" dy="1389" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1500" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="frontend" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;React + TypeScript Frontend&lt;/font&gt;&lt;div&gt;&lt;font size=&quot;3&quot;&gt;(REST + GraphQL Client — Axios + React Query)&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="400" x="430" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow-rest" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="REST" vertex="1">
+          <mxGeometry height="20" width="50" x="490" y="115" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow-gql" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;rounded=0;" value="GraphQL" vertex="1">
+          <mxGeometry height="20" width="70" x="720" y="115" as="geometry" />
+        </mxCell>
+        <mxCell id="fe-to-gw" edge="1" parent="1" source="frontend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="gateway" value="HTTPS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;Spring Cloud Gateway&lt;/font&gt;&lt;div&gt;Routing · JWT Validation · Rate Limiting · OAuth2 Entry Point&lt;/div&gt;" vertex="1">
+          <mxGeometry height="55" width="800" x="230" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="service-layer-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=top;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;Service Layer&lt;/font&gt;" vertex="1">
+          <mxGeometry height="230" width="1130" x="30" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-user" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;gradientColor=#7ea6e0;" value="User Service&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(REST)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Spring Boot + OAuth2&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="50" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-catalog" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;gradientColor=#97d077;" value="Catalog Service&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(GraphQL)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Spring for GraphQL&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="210" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-streaming" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;gradientColor=#ea6b66;" value="Streaming Service&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(REST)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Idempotent · Immutable events&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="370" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-engagement" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcd28;gradientColor=#ffa500;strokeColor=#d79b00;" value="Engagement Service&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(Event-Driven)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;⚡ KEDA ScaledJob&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="530" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-billing" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;gradientColor=#ffd966;" value="Billing Service&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;(REST + Saga)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Saga pattern&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="690" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-review" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6d0de;strokeColor=#996185;gradientColor=#d5739d;" value="Review &amp;amp; Rating Service&lt;div&gt;(REST)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Tombstone pattern&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="850" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="svc-rec" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;gradientColor=#b3b3b3;" value="Recommendation Service&lt;div&gt;(Python / AI)&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;FastAPI, Scikit-learn, Ollama&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="130" x="1010" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="rabbitmq" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=light-dark(#FFCC99,#BE6209);strokeColor=default;gradientColor=light-dark(#000000,#DFA422);gradientDirection=south;opacity=70;" value="RabbitMQ&lt;div&gt;&lt;font style=&quot;font-size: 20px;&quot;&gt;🐇&lt;/font&gt;&lt;br&gt;&lt;div&gt;(Event Broker)&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="530" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="e-user-mq" edge="1" parent="1" source="svc-user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;dashed=0;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="115" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-catalog-mq" edge="1" parent="1" source="svc-catalog" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="275" y="490" />
+              <mxPoint x="530" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-streaming-mq" edge="1" parent="1" source="svc-streaming" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="435" y="410" />
+              <mxPoint x="580" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-engagement-mq" edge="1" parent="1" source="svc-engagement" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;startArrow=block;startFill=1;endFill=1;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-billing-mq" edge="1" parent="1" source="svc-billing" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-review-mq" edge="1" parent="1" source="svc-review" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="rabbitmq">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="915" y="490" />
+              <mxPoint x="730" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-rec-mq" edge="1" parent="1" source="svc-rec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;startArrow=block;startFill=1;endFill=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1080" y="520" />
+            </Array>
+            <mxPoint x="1100.0144827586207" y="350" as="sourcePoint" />
+            <mxPoint x="729.98" y="520.0344827586207" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="db-layer-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;verticalAlign=top;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;Database Layer&lt;/font&gt;" vertex="1">
+          <mxGeometry height="160" width="1130" x="30" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="db-user" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;gradientColor=#7ea6e0;strokeColor=#6c8ebf;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;USER DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="50" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-catalog" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d5e8d4;gradientColor=#97d077;strokeColor=#82b366;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Catalog DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="210" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-streaming" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;gradientColor=#ea6b66;strokeColor=#b85450;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Streaming DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="370" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-engagement" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffcd28;gradientColor=#ffa500;strokeColor=#d79b00;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Engagement DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="530" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-billing" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;gradientColor=#ffd966;strokeColor=#d6b656;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Billing DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="690" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-review" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#e6d0de;gradientColor=#d5739d;strokeColor=#996185;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;Review DB&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="110" x="850" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="db-rec" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;gradientColor=#b3b3b3;strokeColor=#666666;" value="Recommendation&lt;div&gt;AI System&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="130" x="1010" y="635" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;verticalAlign=top;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;Observability Layer&lt;/font&gt;" vertex="1">
+          <mxGeometry height="130" width="1130" x="30" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-prometheus" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" value="&lt;b&gt;Prometheus&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Metrics scraping&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;via /actuator/metrics&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="60" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-grafana" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e85d00;fontColor=#ffffff;strokeColor=#AE4132;" value="&lt;b&gt;Grafana&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Dashboards · Metrics + Logs UI&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="270" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-loki" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7a4f9a;fontColor=#ffffff;strokeColor=#5a3070;" value="&lt;b&gt;Grafana Loki&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Centralised log aggregation&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="480" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-zipkin" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2196F3;fontColor=#ffffff;strokeColor=#1565C0;" value="&lt;b&gt;Zipkin&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Distributed tracing&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Micrometer Tracing&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="160" x="690" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="obs-note" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;fontStyle=2;" value="All services expose /actuator/metrics · &lt;br&gt;Logs shipped to Loki · &lt;br&gt;Trace IDs auto-injected by Micrometer" vertex="1">
+          <mxGeometry height="40" width="310" x="900" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;" value="&lt;font style=&quot;font-size: 18px;&quot;&gt;CI/CD &amp;amp; Deployment&lt;/font&gt;" vertex="1">
+          <mxGeometry height="160" width="1130" x="30" y="960" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-gha" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#23272e;fontColor=#ffffff;strokeColor=#444444;" value="&lt;b&gt;GitHub Actions&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Build · Test · Static Analysis&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Push Docker images&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="60" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="QdFBxiSuBN6uCP9p9FCa-2" edge="1" parent="1" source="cicd-static" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="cicd-registry" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-static" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="&lt;b&gt;Static Analysis&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;SonarCloud / SpotBugs (Java)&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Bandit (Python) · ESLint (TS)&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="280" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-registry" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0db7ed;fontColor=#ffffff;strokeColor=#0a8ab7;" value="&lt;b&gt;Docker Hub&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Container image registry&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="500" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="QdFBxiSuBN6uCP9p9FCa-1" edge="1" parent="1" source="cicd-compose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="cicd-k8s">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-compose" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="&lt;b&gt;Docker Compose&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Development environment&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;All services + DBs + RabbitMQ&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="720" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="cicd-k8s" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#326ce5;fontColor=#ffffff;strokeColor=#1a4db5;" value="&lt;b&gt;Minikube / k3s&lt;/b&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;Local Kubernetes (prod sim)&lt;/font&gt;&lt;/div&gt;&lt;div&gt;&lt;font size=&quot;1&quot;&gt;KEDA autoscaling&lt;/font&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="70" width="180" x="940" y="1010" as="geometry" />
+        </mxCell>
+        <mxCell id="arr-gha-static" edge="1" parent="1" source="cicd-gha" style="endArrow=classic;html=1;rounded=0;" target="cicd-static">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arr-registry-compose" edge="1" parent="1" source="cicd-registry" style="endArrow=classic;html=1;rounded=0;" target="cicd-compose">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-box" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;verticalAlign=top;fontStyle=1;" value="Legend" vertex="1">
+          <mxGeometry height="100" width="400" x="30" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="→  Produces events to RabbitMQ" vertex="1">
+          <mxGeometry height="20" width="250" x="50" y="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="⇄  Produces &amp;amp; Consumes (bidirectional)" vertex="1">
+          <mxGeometry height="20" width="280" x="50" y="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="⚡ KEDA ScaledJob — scales to zero when idle" vertex="1">
+          <mxGeometry height="20" width="300" x="50" y="1220" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="Dashed = metrics scraping (Prometheus)" vertex="1">
+          <mxGeometry height="20" width="280" x="50" y="1240" as="geometry" />
+        </mxCell>
+        <mxCell id="QdFBxiSuBN6uCP9p9FCa-6" edge="1" parent="1" source="gateway" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.509;entryY=0.009;entryDx=0;entryDy=0;entryPerimeter=0;" target="service-layer-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iQEwD7ODFqyoZMYB6Lfh-2" edge="1" parent="1" source="rabbitmq" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.531;entryY=-0.007;entryDx=0;entryDy=0;entryPerimeter=0;" target="db-layer-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
