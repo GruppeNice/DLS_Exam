@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: User Service API
+  version: 1.0.0
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register user and return JWT
+  /api/v1/auth/login:
+    post:
+      summary: Login and return JWT
+  /api/v1/auth/me:
+    get:
+      summary: Get current user profile
+  /api/v1/users/{id}/suspend:
+    post:
+      summary: Suspend user (admin)
+  /api/v1/users/{id}:
+    delete:
+      summary: Delete user (admin)

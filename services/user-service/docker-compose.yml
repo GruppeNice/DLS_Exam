@@ -1,0 +1,57 @@
+services:
+  user-service-db:
+    image: postgres:16
+    container_name: user-service-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - user_service_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  user-service-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: user-service-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: user-service
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://user-service-db:5432/user_db
+      DB_USERNAME: user_user
+      DB_PASSWORD: user_password
+      RABBITMQ_HOST: user-service-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      USER_EVENTS_EXCHANGE: user.events
+      JWT_EXPIRATION_SECONDS: 3600
+      JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+    ports:
+      - "8081:8081"
+    depends_on:
+      user-service-db:
+        condition: service_healthy
+      user-service-rabbitmq:
+        condition: service_healthy
+
+volumes:
+  user_service_db_data:
