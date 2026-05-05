@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>Welcome, <span th:text="${userName}">User</span>!</h1>
+<p>Thanks for signing up. We are excited to have you on board.</p>
+<a th:href="${activationLink}">Activate your account</a>
+</body>
+</html>
