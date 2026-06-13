@@ -1,0 +1,120 @@
+enum ContentType {
+  MOVIE
+  TV_SHOW
+}
+
+enum CastRoleType {
+  ACTOR
+  DIRECTOR
+  WRITER
+  PRODUCER
+}
+
+type Genre {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type Tag {
+  id: ID!
+  name: String!
+}
+
+type CastMember {
+  id: ID!
+  personName: String!
+  roleType: CastRoleType!
+}
+
+type Availability {
+  id: ID!
+  regionCode: String!
+  availableFrom: String
+  availableUntil: String
+}
+
+type RatingStats {
+  averageRating: Float!
+  ratingCount: Int!
+  reviewCount: Int!
+}
+
+type ContentItem {
+  id: ID!
+  title: String!
+  description: String
+  contentType: ContentType!
+  releaseDate: String
+  durationMinutes: Int
+  posterUrl: String
+  genres: [Genre!]!
+  tags: [Tag!]!
+  cast: [CastMember!]!
+  availability: [Availability!]!
+  ratingStats: RatingStats
+  availableInRegion(regionCode: String!): Boolean!
+}
+
+type ContentSearchResult {
+  items: [ContentItem!]!
+  totalCount: Int!
+  page: Int!
+  size: Int!
+}
+
+input ContentFilterInput {
+  titleContains: String
+  genreId: ID
+  tagId: ID
+  contentType: ContentType
+  regionCode: String
+}
+
+input CreateContentInput {
+  title: String!
+  description: String
+  contentType: ContentType!
+  releaseDate: String
+  durationMinutes: Int
+  posterUrl: String
+  genreIds: [ID!]
+  tagIds: [ID!]
+  cast: [CastMemberInput!]
+  availability: [AvailabilityInput!]
+}
+
+input UpdateContentInput {
+  title: String
+  description: String
+  contentType: ContentType
+  releaseDate: String
+  durationMinutes: Int
+  posterUrl: String
+  genreIds: [ID!]
+  tagIds: [ID!]
+}
+
+input CastMemberInput {
+  personName: String!
+  roleType: CastRoleType!
+}
+
+input AvailabilityInput {
+  regionCode: String!
+  availableFrom: String
+  availableUntil: String
+}
+
+type Query {
+  contentById(id: ID!): ContentItem
+  searchContent(filter: ContentFilterInput, page: Int = 0, size: Int = 20): ContentSearchResult!
+  genres: [Genre!]!
+  tags: [Tag!]!
+}
+
+type Mutation {
+  createContent(input: CreateContentInput!): ContentItem!
+  updateContent(id: ID!, input: UpdateContentInput!): ContentItem!
+  removeContent(id: ID!): Boolean!
+}
