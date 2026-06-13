@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>Continue watching</h1>
+<p>Hi <span th:text="${name}">viewer</span>,</p>
+<p>You stopped at <span th:text="${positionSeconds}">0</span> seconds on content
+    <code th:text="${contentId}">content-id</code>.</p>
+<p>Pick up where you left off the next time you open DLS.</p>
+</body>
+</html>

@@ -2,8 +2,9 @@ package com.ratingandreviewservice.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,15 +14,16 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "movie_id"}))
 public class Rating {
 
     @Id
     private UUID id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private UUID userId;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private UUID movieId;
 
     private int userRating;

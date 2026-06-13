@@ -304,10 +304,17 @@ services:
       DB_URL: jdbc:mysql://review-rating-service-db:3306/review_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: review_user
       DB_PASSWORD: review_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      REVIEW_EVENTS_EXCHANGE: review.events
     ports:
       - "8085:8085"
     depends_on:
       review-rating-service-db:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   engagement-service:
@@ -324,6 +331,11 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
+      BILLING_EVENTS_EXCHANGE: billing.events
+      STREAMING_EVENTS_EXCHANGE: streaming.events
+      CATALOG_EVENTS_EXCHANGE: catalog.events
+      DEMO_USER_EMAIL: demo@dls.local
+      ENGAGEMENT_BROADCAST_EMAIL: demo@dls.local
       SPRING_MAIL_HOST: mailhog
       SPRING_MAIL_PORT: 1025
       SPRING_MAIL_USERNAME: ""

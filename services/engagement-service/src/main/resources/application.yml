@@ -32,3 +32,13 @@ spring:
 notification:
   mail:
     from: ${SPRING_MAIL_FROM:noreply@dls.local}
+
+app:
+  messaging:
+    billing-exchange: ${BILLING_EVENTS_EXCHANGE:billing.events}
+    streaming-exchange: ${STREAMING_EVENTS_EXCHANGE:streaming.events}
+    catalog-exchange: ${CATALOG_EVENTS_EXCHANGE:catalog.events}
+  engagement:
+    demo-user-id: ${DEMO_USER_ID:dddddddd-dddd-dddd-dddd-ddddddddddd1}
+    demo-user-email: ${DEMO_USER_EMAIL:demo@dls.local}
+    broadcast-recipient: ${ENGAGEMENT_BROADCAST_EMAIL:demo@dls.local}

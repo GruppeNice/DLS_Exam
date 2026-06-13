@@ -876,6 +876,22 @@ spec:
                 secretKeyRef:
                   name: dls-secrets
                   key: REVIEW_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: REVIEW_EVENTS_EXCHANGE
+              value: review.events
 
 ---
 apiVersion: v1
@@ -951,6 +967,16 @@ spec:
               value: "false"
             - name: SPRING_MAIL_FROM
               value: noreply@dls.local
+            - name: BILLING_EVENTS_EXCHANGE
+              value: billing.events
+            - name: STREAMING_EVENTS_EXCHANGE
+              value: streaming.events
+            - name: CATALOG_EVENTS_EXCHANGE
+              value: catalog.events
+            - name: DEMO_USER_EMAIL
+              value: demo@dls.local
+            - name: ENGAGEMENT_BROADCAST_EMAIL
+              value: demo@dls.local
 
 ---
 apiVersion: v1

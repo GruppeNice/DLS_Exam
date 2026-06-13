@@ -79,21 +79,21 @@ flowchart TB
 
 | Layer / Service | Status | Notes |
 |-----------------|--------|-------|
-| `user-service` | Implemented | JWT auth, account lifecycle, RabbitMQ events |
+| `user-service` | Implemented | JWT auth, Flyway schema, demo user seed, RabbitMQ events |
 | `billing-service` | Implemented | Plans, subscriptions, payments, invoices, saga activation |
 | `streaming-service` | Implemented | Playback sessions, progress, subscription gate, DRM sim |
-| `catalog-service` | Scaffold only | GraphQL planned |
-| `review-rating-service` | Scaffold only | REST planned |
+| `catalog-service` | Implemented | GraphQL browse/search, seeded catalog, review event consumer |
+| `review-rating-service` | Implemented | REST ratings/reviews, Flyway + seeds, RabbitMQ publisher |
 | `recommendation-service` | Implemented | Python/FastAPI, Scikit-learn NMF, RabbitMQ consumer, trending API |
-| `engagement-service` | Scaffold only | Async/KEDA ScaledJob planned |
-| `frontend/` | Scaffold only | React + TypeScript + Vite planned |
-| `infra/docker` | Implemented | Shared Dockerfiles + unified compose with one RabbitMQ |
-| `infra/k8s` | Scaffold only | Local K8s (Minikube/k3s) planned |
-| `infra/messaging` | Scaffold only | Shared broker topology planned |
+| `engagement-service` | Implemented | REST notifications, domain-event consumers, MailHog email |
+| `frontend/` | Implemented | React + TypeScript test UI (Stream Console) |
+| `infra/docker` | Implemented | Unified compose: 7 services + frontend + RabbitMQ + MailHog + MySQL |
+| `infra/k8s` | Implemented (local) | `dls-local.yaml` + `build-images.ps1` for Minikube/Docker Desktop |
+| `infra/messaging` | Scaffold only | Shared broker topology docs planned |
 | `infra/observability` | Scaffold only | Prometheus/Grafana planned |
 | `infra/ci-cd` | Scaffold only | GitHub Actions planned |
 | `packages/contracts` | Scaffold only | Shared OpenAPI/AsyncAPI planned |
-| API Gateway | Not started | Spring Cloud Gateway planned |
+| API Gateway | Not started | Spring Cloud Gateway planned; frontend/nginx proxy used today |
 
 ---
 
@@ -105,7 +105,7 @@ flowchart TB
 |------|-------|
 | Path | `services/user-service` |
 | Port | `8081` |
-| Database | PostgreSQL `user_db` on host `5432` |
+| Database | MySQL `user_db` on host `3306` |
 | RabbitMQ | `5672` / UI `15672` |
 | Exchange | `user.events` |
 | API style | REST |
@@ -139,7 +139,7 @@ docker compose up --build
 |------|-------|
 | Path | `services/billing-service` |
 | Port | `8084` |
-| Database | PostgreSQL `billing_db` on host `5433` |
+| Database | MySQL `billing_db` on host `3307` |
 | RabbitMQ | `5672` / UI `15672` (shared) |
 | Exchange | `billing.events` |
 | API style | REST |
@@ -175,7 +175,7 @@ docker compose up --build
 |------|-------|
 | Path | `services/streaming-service` |
 | Port | `8083` |
-| Database | PostgreSQL `streaming_db` on host `5434` |
+| Database | MySQL `streaming_db` on host `3308` |
 | RabbitMQ | `5672` / UI `15672` (shared) |
 | Exchange | `streaming.events` |
 | API style | REST (command-based / CQRS) |
@@ -206,28 +206,30 @@ docker compose up --build
 
 ---
 
-### 3.4 Catalog Service (planned)
+### 3.4 Catalog Service
 
 | Item | Value |
 |------|-------|
 | Path | `services/catalog-service` |
-| Port | TBD (suggest `8082`) |
+| Port | `8082` |
+| Database | MySQL `catalog_db` on host `3310` |
 | API style | GraphQL |
-| Data | Content metadata, availability, search indexes |
+| Data | Content metadata, availability, search indexes (Flyway seed: 3 titles) |
 
-**Events (planned):** `content.created`, `content.updated`, `content.removed`, consumes rating/review events.
+**Events:** produces `content.created/updated/removed`; consumes `content.rated`, `content.reviewed`.
 
 ---
 
-### 3.5 Review & Rating Service (planned)
+### 3.5 Review & Rating Service
 
 | Item | Value |
 |------|-------|
 | Path | `services/review-rating-service` |
-| Port | TBD (suggest `8085`) |
+| Port | `8085` |
+| Database | MySQL `review_db` on host `3311` |
 | API style | REST |
 
-**Events (planned):** `content.rated`, `content.reviewed`, `review.moderated`
+**Events produced:** `content.rated`, `content.reviewed` on exchange `review.events`.
 
 ---
 
@@ -238,7 +240,7 @@ docker compose up --build
 | Path | `services/recommendation-service` |
 | Stack | Python 3.12 + FastAPI + Scikit-learn + Pandas + NumPy |
 | Port | `8090` |
-| Database | PostgreSQL `recommendation_db` on host `5435` |
+| Database | MySQL `recommendation_db` on host `3309` |
 | RabbitMQ | `5672` / UI `15672` (shared) |
 | API style | REST (query-based recommendations) |
 | Auth | JWT for personalized endpoint |
@@ -269,16 +271,20 @@ docker compose up --build
 
 ---
 
-### 3.7 Engagement Service (planned)
+### 3.7 Engagement Service
 
 | Item | Value |
 |------|-------|
 | Path | `services/engagement-service` |
-| Style | Async-first (RabbitMQ consumers), minimal REST |
-| Scaling | KEDA ScaledJob in Kubernetes |
+| Port | `8086` |
+| Database | MySQL `engagement_db` on host `3312` |
+| Style | Async-first (RabbitMQ consumers) + REST for manual triggers |
+| Mail | MailHog in local compose (`8025` UI, SMTP `1025`) |
 
-**Consumes:** `subscription.activated`, `playback.stopped`, `content.created`  
-**Delivers:** email/push/in-app notifications, continue-watching reminders.
+**Consumes:** `subscription.activated`, `playback.stopped`, `content.created` (plus internal `notification-queue`).  
+**Delivers:** email notifications via Thymeleaf templates.
+
+Scaling with KEDA ScaledJob in Kubernetes is planned for production-style deployments.
 
 ---
 
@@ -286,24 +292,61 @@ docker compose up --build
 
 | Component | Host port | Container / service |
 |-----------|-----------|---------------------|
+| **Frontend (test UI)** | **3000** | `dls-frontend` |
 | User Service | 8081 | `user-service` |
-| Catalog Service | 8082 (planned) | — |
+| Catalog Service | 8082 | `catalog-service` |
 | Streaming Service | 8083 | `streaming-service` |
 | Billing Service | 8084 | `billing-service` |
+| Review Service | 8085 | `review-rating-service` |
+| Engagement Service | 8086 | `engagement-service` |
 | Recommendation Service | 8090 | `recommendation-service` |
-| User DB | 5432 | `user-service-db` |
 | RabbitMQ | `5672` / UI `15672` | `dls-rabbitmq` (shared) |
-| Billing DB | 5433 | `billing-service-db` |
-| Streaming DB | 5434 | `streaming-service-db` |
-| Recommendation DB | 5435 | `recommendation-service-db` |
+| MailHog | SMTP `1025` / UI `8025` | `mailhog` |
 
-The platform uses **one shared RabbitMQ** and **database-per-service** PostgreSQL instances. Run everything from the repo root:
+| MySQL database | Host port |
+|----------------|-----------|
+| `user_db` | 3306 |
+| `billing_db` | 3307 |
+| `streaming_db` | 3308 |
+| `recommendation_db` | 3309 |
+| `catalog_db` | 3310 |
+| `review_db` | 3311 |
+| `engagement_db` | 3312 |
+
+The platform uses **one shared RabbitMQ**, **MailHog**, and **database-per-service MySQL 8.4** instances. Run everything from the repo root:
 
 ```bash
 docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
+Open **http://localhost:3000** for the Stream Console test UI.
+
 Per-service `docker-compose.yml` files include the shared compose definition for convenience.
+
+### 4.1 Database seeds (automatic on first startup)
+
+| Service | Mechanism | Seed data |
+|---------|-----------|-----------|
+| `user-service` | Flyway `V2__seed_demo_user.sql` | `demo@dls.local` / `password123` (id `dddddddd-dddd-dddd-dddd-ddddddddddd1`) |
+| `billing-service` | Flyway `V2__seed_subscription_plans.sql` | BASIC, PREMIUM, FAMILY plan UUIDs |
+| `catalog-service` | Flyway `V2__seed_catalog.sql` | 3 movies (`aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1/2/3`) |
+| `review-rating-service` | Flyway `V2__seed_reviews.sql` | Sample ratings/reviews aligned to demo user + catalog IDs |
+| `streaming-service` | Flyway schema only | No content seed |
+| `recommendation-service` | `schema.sql` on first boot | No interaction seed (populated via events or REST ingest) |
+| `engagement-service` | JPA `ddl-auto: update` | No seed |
+
+Flyway migrations run when each Java service starts against an empty database volume. Re-seeding requires `docker compose down -v` or a fresh volume.
+
+### 4.2 Kubernetes (local)
+
+```powershell
+.\infra\k8s\build-images.ps1          # or -LoadToMinikube
+kubectl apply -f infra/k8s/dls-local.yaml
+kubectl get pods -w
+kubectl get svc
+```
+
+See `infra/k8s/README.md` for NodePort access and MailHog port-forward.
 
 ---
 
@@ -328,7 +371,9 @@ Shared dev secret (all services): see each service `config/.env.example`.
 | Billing Service | `subscription.activated`, `subscription.cancelled`, `payment.succeeded`, `payment.failed` |
 | Streaming Service | `playback.started`, `playback.stopped`, `playback.progress.updated` |
 | Catalog Service | `content.created`, `content.updated`, `content.removed` |
-| Review Service | `content.rated`, `content.reviewed`, `review.moderated` |
+| Review Service | `content.rated`, `content.reviewed`, `review.moderated` (moderated planned) |
+
+**Consumers today:** Recommendation (playback, billing, review), Catalog (review), Engagement (`subscription.activated`, `playback.stopped`, `content.created`).
 
 **Exception (synchronous read):** Streaming calls Billing `GET /subscriptions/active/{userId}` before playback. This is an intentional gate, not primary inter-service communication.
 
@@ -336,13 +381,16 @@ Event contracts (stubs): each service `api/asyncapi.yaml`. Shared contracts plan
 
 ---
 
-## 7. End-to-end happy path (implemented services)
+## 7. End-to-end happy path
 
-Run User, Billing, and Streaming stacks (three terminals or future unified compose).
+**Quickest path:** `docker compose -f infra/docker/docker-compose.yml up --build` → open http://localhost:3000 → sign in as `demo@dls.local` / `password123` → Overview → **Run demo flow**.
+
+Manual API sequence (all services running):
 
 ```text
-1. Register user
-   POST http://localhost:8081/api/v1/auth/register
+1. Login (or register)
+   POST http://localhost:8081/api/v1/auth/login
+   Body: { "email": "demo@dls.local", "password": "password123" }
    → save JWT from response
 
 2. Activate subscription
@@ -355,7 +403,7 @@ Run User, Billing, and Streaming stacks (three terminals or future unified compo
    POST http://localhost:8083/api/v1/playback/start
    Header: Authorization: Bearer <jwt>
    Header: Idempotency-Key: playback-001
-   Body: { "contentId": "22222222-2222-2222-2222-222222222201" }
+   Body: { "contentId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1" }
 
 4. Update progress
    PUT http://localhost:8083/api/v1/playback/sessions/{sessionId}/progress
@@ -367,7 +415,7 @@ Run User, Billing, and Streaming stacks (three terminals or future unified compo
    Header: Authorization: Bearer <jwt>
 ```
 
-Check RabbitMQ management UIs to confirm events on each broker.
+Check RabbitMQ management UI (`15672`) and MailHog (`8025`) for async side effects.
 
 ---
 
@@ -389,9 +437,9 @@ services/<name>/
   README.md
 ```
 
-### 8.2 `frontend/` — client app (planned)
+### 8.2 `frontend/` — Stream Console test UI
 
-React + TypeScript + Vite. Axios for REST, React Query for server state. Talks to API Gateway (planned) or services directly in early dev.
+React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx in Docker, Vite dev server locally). Not a production product UI — health checks and guided cross-service demo flow.
 
 ### 8.3 `infra/` — platform operations
 
@@ -465,15 +513,14 @@ Definitions will live in `infra/ci-cd/` and `.github/workflows/`.
 
 ---
 
-## 11. Cloud / Kubernetes (planned)
+## 11. Cloud / Kubernetes
 
-Assignment requires:
+**Local Kubernetes** is implemented under `infra/k8s/` (`dls-local.yaml`, `build-images.ps1`). Use Docker Desktop Kubernetes or Minikube.
 
-- Local Kubernetes (Minikube or k3s), not full cloud deployment
+Assignment also describes (for report / future work):
+
 - KEDA ScaledJob for Engagement Service
-- Managed DB and K8s described in report (GCP Cloud SQL + GKE or AWS RDS + EKS)
-
-Manifests target: `infra/k8s/`.
+- Managed DB and K8s on cloud (GCP Cloud SQL + GKE or AWS RDS + EKS)
 
 ---
 
@@ -481,7 +528,7 @@ Manifests target: `infra/k8s/`.
 
 | Pattern | Where |
 |---------|-------|
-| Database-per-service | Each microservice owns its PostgreSQL schema |
+| Database-per-service | Each microservice owns its MySQL schema |
 | Event-driven architecture | RabbitMQ primary inter-service communication |
 | Saga | Billing subscription activation |
 | Idempotency | Billing payments; Streaming session start |
@@ -528,14 +575,15 @@ docker compose up --build
 
 ## 14. What to implement next (suggested order)
 
-1. ~~`infra/docker` — unified compose wiring User + Billing + Streaming + shared RabbitMQ~~ (done)
-2. `catalog-service` — GraphQL content API
-3. API Gateway — single frontend entry point
-4. `frontend/` — shell app consuming gateway
-5. `review-rating-service`
-6. `recommendation-service` (Python)
-7. `engagement-service` + KEDA
-8. `infra/k8s` + `infra/ci-cd` + `infra/observability`
+1. ~~Unified docker compose (all services + frontend)~~ (done)
+2. ~~Catalog, Review, Engagement, Recommendation wiring~~ (done)
+3. ~~Local K8s manifests~~ (done)
+4. API Gateway — single frontend entry point
+5. `packages/contracts` — shared OpenAPI/AsyncAPI schemas
+6. `infra/observability` — Prometheus scrape + Grafana dashboards
+7. `infra/ci-cd` — GitHub Actions pipelines
+8. Engagement KEDA ScaledJob + K8s probes/PVCs for databases
+9. Full Google OAuth callback flow
 
 ---
 
@@ -543,7 +591,7 @@ docker compose up --build
 
 | Caller | callee | Mechanism | Why |
 |--------|--------|-----------|-----|
-| Frontend | All services | REST/GraphQL via Gateway (planned) | User actions |
+| Frontend | All services | REST/GraphQL via nginx/Vite proxy | User actions and demo flow |
 | Streaming | Billing | REST `GET /subscriptions/active/{userId}` | Subscription gate before playback |
 | Recommendation | Event bus | RabbitMQ consume | Build preference models and trending rankings |
 | Engagement | Event bus | RabbitMQ consume | Notifications |
@@ -553,4 +601,4 @@ docker compose up --build
 
 ---
 
-*Last updated to reflect: user-service, billing-service, streaming-service, recommendation-service implementations.*
+*Last updated: full MySQL stack, event wiring (review publisher, engagement domain consumers), Flyway seeds, local K8s, Stream Console frontend.*
