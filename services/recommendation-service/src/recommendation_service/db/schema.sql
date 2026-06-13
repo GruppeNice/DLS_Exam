@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS model_runs (
     user_count INT NOT NULL DEFAULT 0,
     content_count INT NOT NULL DEFAULT 0,
     started_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    completed_at TIMESTAMP(6) NULL
+    completed_at TIMESTAMP(6) NULL,
+    details TEXT NULL
 );
 
 CREATE INDEX idx_interactions_user_id ON user_content_interactions (user_id);

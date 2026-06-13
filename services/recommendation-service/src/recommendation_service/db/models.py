@@ -71,3 +71,9 @@ def init_database(engine, *, apply_sql_schema: bool = True) -> None:
                 for statement in statements:
                     connection.exec_driver_sql(statement)
     Base.metadata.create_all(bind=engine)
+    inspector = inspect(engine)
+    if inspector.has_table("model_runs"):
+        columns = {column["name"] for column in inspector.get_columns("model_runs")}
+        if "details" not in columns:
+            with engine.begin() as connection:
+                connection.exec_driver_sql("ALTER TABLE model_runs ADD COLUMN details TEXT NULL")
