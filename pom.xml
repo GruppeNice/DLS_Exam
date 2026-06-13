@@ -14,5 +14,6 @@
     <modules>
         <module>services/user-service</module>
         <module>services/billing-service</module>
+        <module>services/streaming-service</module>
     </modules>
 </project>
