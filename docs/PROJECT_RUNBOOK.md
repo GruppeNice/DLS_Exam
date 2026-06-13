@@ -329,7 +329,7 @@ Per-service `docker-compose.yml` files include the shared compose definition for
 |---------|-----------|-----------|
 | `user-service` | Flyway `V2__seed_demo_user.sql` | `demo@dls.local` / `password123` (id `dddddddd-dddd-dddd-dddd-ddddddddddd1`) |
 | `billing-service` | Flyway `V2__seed_subscription_plans.sql` | BASIC, PREMIUM, FAMILY plan UUIDs |
-| `catalog-service` | Flyway `V2__seed_catalog.sql` | 3 movies (`aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1/2/3`) |
+| `catalog-service` | Flyway `V2` + `V3` | 10 movies/shows (`aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1`–`aaa10`), 6 genres |
 | `review-rating-service` | Flyway `V2__seed_reviews.sql` | Sample ratings/reviews aligned to demo user + catalog IDs |
 | `streaming-service` | Flyway schema only | No content seed |
 | `recommendation-service` | `schema.sql` on first boot | No interaction seed (populated via events or REST ingest) |

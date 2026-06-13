@@ -49,6 +49,7 @@ const SEARCH_QUERY = `
         releaseDate
         durationMinutes
         posterUrl
+        genres { id name }
         ratingStats { averageRating ratingCount reviewCount }
       }
     }
@@ -83,7 +84,7 @@ export async function searchContent(
   return graphql(SEARCH_QUERY, {
     filter: { titleContains: titleContains || undefined, regionCode },
     page: 0,
-    size: 20,
+    size: 30,
   });
 }
 

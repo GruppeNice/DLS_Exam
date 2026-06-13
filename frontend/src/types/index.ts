@@ -12,6 +12,13 @@ export const SEED_CONTENT_IDS = [
   "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
   "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2",
   "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa6",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa7",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa8",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa9",
+  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa10",
 ] as const;
 
 export const SEED_PLAN_IDS = {
@@ -45,6 +52,7 @@ export interface ContentItem {
   releaseDate?: string;
   durationMinutes?: number;
   posterUrl?: string;
+  genres?: { id: string; name: string }[];
   ratingStats?: {
     averageRating: number;
     ratingCount: number;

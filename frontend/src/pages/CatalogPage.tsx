@@ -42,7 +42,7 @@ export function CatalogPage() {
     <div className="page">
       <PageHeader
         title="Catalog"
-        description="Browse and search content via GraphQL. Seeded titles include Neon Horizon, Echoes of Mars, and Midnight Circuit."
+        description="Browse and search content via GraphQL. The catalog is Flyway-seeded with 10 titles across Action, Drama, Sci-Fi, Comedy, Horror, and Documentary."
         service="catalog-service"
         port={8082}
       />
@@ -81,7 +81,18 @@ export function CatalogPage() {
                 )}
               </div>
               <div className="content-body">
-                <p className="content-type">{item.contentType}</p>
+                <div className="content-meta">
+                  <p className="content-type">{item.contentType}</p>
+                  {item.genres && item.genres.length > 0 && (
+                    <div className="genre-tags">
+                      {item.genres.map((genre) => (
+                        <span key={genre.id} className="genre-tag">
+                          {genre.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <h3>{item.title}</h3>
                 <p className="muted">{item.description}</p>
                 {item.ratingStats && (
