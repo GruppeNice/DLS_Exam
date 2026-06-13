@@ -1,0 +1,32 @@
+openapi: 3.0.3
+info:
+  title: Billing Service API
+  version: 1.0.0
+paths:
+  /api/v1/plans:
+    get:
+      summary: List active subscription plans
+  /api/v1/plans/{planId}:
+    get:
+      summary: Get subscription plan by id
+  /api/v1/subscriptions:
+    post:
+      summary: Activate subscription (saga with simulated payment)
+  /api/v1/subscriptions/me:
+    get:
+      summary: List current user subscriptions
+  /api/v1/subscriptions/active/{userId}:
+    get:
+      summary: Check whether user has an active subscription
+  /api/v1/subscriptions/{subscriptionId}/cancel:
+    post:
+      summary: Cancel active subscription
+  /api/v1/payments:
+    post:
+      summary: Process standalone payment with idempotency key
+  /api/v1/payments/{paymentId}/refund:
+    post:
+      summary: Refund a succeeded payment
+  /api/v1/invoices:
+    get:
+      summary: List invoices for current user
