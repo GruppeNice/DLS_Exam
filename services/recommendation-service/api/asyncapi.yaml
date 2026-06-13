@@ -1,0 +1,25 @@
+asyncapi: 2.6.0
+info:
+  title: Recommendation Service Events
+  version: 1.0.0
+channels:
+  playback.started:
+    subscribe:
+      message:
+        name: PlaybackStarted
+  playback.progress.updated:
+    subscribe:
+      message:
+        name: PlaybackProgressUpdated
+  playback.stopped:
+    subscribe:
+      message:
+        name: PlaybackStopped
+  subscription.activated:
+    subscribe:
+      message:
+        name: SubscriptionActivated
+  content.rated:
+    subscribe:
+      message:
+        name: ContentRated

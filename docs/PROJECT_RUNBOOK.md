@@ -84,7 +84,7 @@ flowchart TB
 | `streaming-service` | Implemented | Playback sessions, progress, subscription gate, DRM sim |
 | `catalog-service` | Scaffold only | GraphQL planned |
 | `review-rating-service` | Scaffold only | REST planned |
-| `recommendation-service` | Scaffold only | Python/FastAPI + ML planned |
+| `recommendation-service` | Implemented | Python/FastAPI, Scikit-learn NMF, RabbitMQ consumer, trending API |
 | `engagement-service` | Scaffold only | Async/KEDA ScaledJob planned |
 | `frontend/` | Scaffold only | React + TypeScript + Vite planned |
 | `infra/docker` | Scaffold only | Per-service compose exists; root compose planned |
@@ -231,16 +231,41 @@ docker compose up --build
 
 ---
 
-### 3.6 Recommendation Service (planned)
+### 3.6 Recommendation Service
 
 | Item | Value |
 |------|-------|
 | Path | `services/recommendation-service` |
-| Stack | Python + FastAPI + Scikit-learn |
-| Port | TBD (suggest `8090`) |
+| Stack | Python 3.12 + FastAPI + Scikit-learn + Pandas + NumPy |
+| Port | `8090` |
+| Database | PostgreSQL `recommendation_db` on host `5435` |
+| RabbitMQ | `5675` / UI `15675` |
+| API style | REST (query-based recommendations) |
+| Auth | JWT for personalized endpoint |
 
-**Consumes:** playback, rating, subscription events.  
-**Produces:** recommendation lists, trending rankings.
+**Consumes (RabbitMQ):**
+- `playback.started`, `playback.progress.updated`, `playback.stopped` from `streaming.events`
+- `subscription.activated` from `billing.events`
+- `content.rated` from `review.events` (when Review Service exists)
+
+**REST endpoints:**
+- `GET /api/v1/recommendations/me` — personalized list (JWT)
+- `GET /api/v1/recommendations/trending` — trending rankings
+- `POST /api/v1/recommendations/retrain` — manual model retrain
+- `POST /api/v1/recommendations/interactions` — dev/test ingest
+
+**ML pipeline:**
+- interaction weights aggregated from events
+- Scikit-learn NMF collaborative filtering
+- precomputed lists stored per user
+- periodic retraining via APScheduler
+
+**Run:**
+
+```bash
+cd services/recommendation-service
+docker compose up --build
+```
 
 ---
 
@@ -265,12 +290,15 @@ docker compose up --build
 | Catalog Service | 8082 (planned) | — |
 | Streaming Service | 8083 | `streaming-service` |
 | Billing Service | 8084 | `billing-service` |
+| Recommendation Service | 8090 | `recommendation-service` |
 | User DB | 5432 | `user-service-db` |
 | Billing DB | 5433 | `billing-service-db` |
 | Streaming DB | 5434 | `streaming-service-db` |
+| Recommendation DB | 5435 | `recommendation-service-db` |
 | User RabbitMQ | 5672 / 15672 | `user-service-rabbitmq` |
 | Billing RabbitMQ | 5673 / 15673 | `billing-service-rabbitmq` |
 | Streaming RabbitMQ | 5674 / 15674 | `streaming-service-rabbitmq` |
+| Recommendation RabbitMQ | 5675 / 15675 | `recommendation-service-rabbitmq` |
 
 Each implemented service currently ships its **own** docker-compose stack (isolated DB + broker). A unified `infra/docker` compose is planned to run the full platform together with one command.
 
@@ -514,7 +542,7 @@ docker compose up --build
 |--------|--------|-----------|-----|
 | Frontend | All services | REST/GraphQL via Gateway (planned) | User actions |
 | Streaming | Billing | REST `GET /subscriptions/active/{userId}` | Subscription gate before playback |
-| Recommendation | Event bus | RabbitMQ consume | Build preference models |
+| Recommendation | Event bus | RabbitMQ consume | Build preference models and trending rankings |
 | Engagement | Event bus | RabbitMQ consume | Notifications |
 | Catalog | Event bus | RabbitMQ consume/produce | Metadata sync |
 
@@ -522,4 +550,4 @@ docker compose up --build
 
 ---
 
-*Last updated to reflect: user-service, billing-service, streaming-service implementations.*
+*Last updated to reflect: user-service, billing-service, streaming-service, recommendation-service implementations.*
