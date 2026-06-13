@@ -6,9 +6,10 @@ import com.ratingandreviewservice.model.Review;
 import com.ratingandreviewservice.model.ReviewVote;
 import com.ratingandreviewservice.repository.ReviewRepository;
 import com.ratingandreviewservice.repository.ReviewVotesRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,7 +26,7 @@ public class ReviewVotesService {
 
     public void addReviewVote(ReviewVotesRequest reviewVotesRequest){
         if(reviewRepository.findById(reviewVotesRequest.reviewId()).isEmpty()){
-            throw new IllegalArgumentException("Review with id " + reviewVotesRequest.reviewId() + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewVotesRequest.reviewId() + " not found");
         }
         ReviewVote newReviewVote = fromDTO(reviewVotesRequest);
         newReviewVote.setId(UUID.randomUUID());
@@ -35,11 +36,11 @@ public class ReviewVotesService {
     public List<ReviewVotesResponse> getReviewVotesByReviewId(UUID reviewId){
         Review review = reviewRepository.findById(reviewId).orElse(null);
         if(review == null){
-            throw new IllegalArgumentException("Review with id " + reviewId + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewId + " not found");
         }
         List<ReviewVotesResponse> reviewVotesResponses = reviewVotesRepository.findReviewVoteByReview(review);
         if(reviewVotesResponses.isEmpty()){
-            throw new IllegalArgumentException("ReviewVotes with review id " + reviewId + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ReviewVotes with review id " + reviewId + " not found");
         }
         return reviewVotesResponses;
     }
@@ -47,7 +48,7 @@ public class ReviewVotesService {
     public ReviewVote fromDTO(ReviewVotesRequest reviewVotesRequest) {
         Review review = reviewRepository.findById(reviewVotesRequest.reviewId()).orElse(null);
         if(review == null){
-            throw new IllegalArgumentException("Review with id " + reviewVotesRequest.reviewId() + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewVotesRequest.reviewId() + " not found");
         }
         ReviewVote reviewVote = new ReviewVote();
         reviewVote.setReview(review);

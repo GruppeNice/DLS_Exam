@@ -4,7 +4,9 @@ import com.ratingandreviewservice.dto.RatingRequest;
 import com.ratingandreviewservice.dto.RatingResponse;
 import com.ratingandreviewservice.model.Rating;
 import com.ratingandreviewservice.repository.RatingRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -22,14 +24,14 @@ public class RatingService {
         newRating.setId(UUID.randomUUID());
         Rating savedRating = ratingRepository.save(newRating);
         if(savedRating.getId()==null){
-            throw new IllegalArgumentException("Failed to save rating");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to save rating");
         }
     }
 
     public RatingResponse getRatingById(UUID id){
         Rating rating = ratingRepository.findById(id).orElse(null);
         if(rating == null){
-            throw new IllegalArgumentException("Rating with id " + id + " not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Rating with id " + id + " not found");
         }
 
         return toDTO(rating);
