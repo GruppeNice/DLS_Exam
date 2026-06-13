@@ -31,19 +31,27 @@ set PYTHONPATH=src
 uvicorn recommendation_service.main:app --reload --port 8090 --app-dir src
 ```
 
-Requires PostgreSQL and RabbitMQ (or use Docker Compose).
+Requires PostgreSQL and RabbitMQ (or use shared Docker Compose).
 
-## Run with Docker Compose
+## Docker
+
+From the **repository root**:
 
 ```bash
-docker compose up --build
+docker compose -f infra/docker/docker-compose.yml up --build recommendation-service recommendation-service-db rabbitmq
+```
+
+Or from this folder:
+
+```bash
+docker compose up --build recommendation-service recommendation-service-db rabbitmq
 ```
 
 This starts:
 
 - `recommendation-service` on `http://localhost:8090`
 - PostgreSQL on `localhost:5435`
-- RabbitMQ on `localhost:5675` and management UI on `http://localhost:15675`
+- Shared RabbitMQ on `localhost:5672` / UI `http://localhost:15672`
 
 API docs: `http://localhost:8090/docs`
 

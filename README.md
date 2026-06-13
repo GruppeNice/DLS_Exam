@@ -59,8 +59,8 @@ This convention is documented here to avoid repeating identical `README.md` file
 
 ## Infrastructure and Shared Packages
 
-- `infra/docker`: local container and compose setup.
-- `infra/k8s`: Kubernetes manifests/charts for local cluster deployment.
+- `infra/docker`: shared Dockerfiles, full-platform `docker-compose.yml`, and `.env.example`
+- `infra/k8s`: Kubernetes manifests/charts for local cluster deployment
 - `infra/messaging`: event broker topology and messaging setup.
 - `infra/observability`: metrics, logs, tracing configuration.
 - `infra/ci-cd`: pipeline definitions and quality automation.
@@ -68,6 +68,22 @@ This convention is documented here to avoid repeating identical `README.md` file
 - `packages/contracts`: cross-service API/event contracts.
 - `packages/shared-types`: shared DTOs and type models.
 - `packages/shared-utils`: reusable helper utilities.
+
+## Build and run
+
+Java services share a parent Maven POM at the repository root. Build everything:
+
+```bash
+mvn test
+```
+
+Run the full local platform:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml up --build
+```
+
+See [`infra/docker/README.md`](infra/docker/README.md) and [`docs/PROJECT_RUNBOOK.md`](docs/PROJECT_RUNBOOK.md) for details.
 
 ## Next Steps
 

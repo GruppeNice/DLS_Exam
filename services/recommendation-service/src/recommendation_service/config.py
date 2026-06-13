@@ -11,7 +11,7 @@ class Settings(BaseSettings):
         "postgresql+psycopg2://recommendation_user:recommendation_password@localhost:5435/recommendation_db"
     )
     rabbitmq_host: str = "localhost"
-    rabbitmq_port: int = 5675
+    rabbitmq_port: int = 5672
     rabbitmq_username: str = "guest"
     rabbitmq_password: str = "guest"
     streaming_events_exchange: str = "streaming.events"

@@ -14,29 +14,29 @@ Spring Boot payment and billing microservice implementing:
 ## Run locally
 
 ```bash
-mvn spring-boot:run
+# from repository root
+mvn spring-boot:run -pl services/billing-service
 ```
 
-Requires PostgreSQL and RabbitMQ, or use Docker Compose below.
+## Docker
 
-## Build Docker image
+Shared Docker files live in `infra/docker/`. From the **repository root**:
 
 ```bash
-docker build -t dls/billing-service:local .
-docker run --rm -p 8084:8084 dls/billing-service:local
+docker compose -f infra/docker/docker-compose.yml up --build billing-service billing-service-db rabbitmq
 ```
 
-## Run with Docker Compose
+Or from this folder:
 
 ```bash
-docker compose up --build
+docker compose up --build billing-service billing-service-db rabbitmq
 ```
 
 This starts:
 
 - `billing-service` on `http://localhost:8084`
 - PostgreSQL on `localhost:5433`
-- RabbitMQ on `localhost:5673` and management UI on `http://localhost:15673` (`guest`/`guest`)
+- Shared RabbitMQ on `localhost:5672` / UI `http://localhost:15672`
 
 ## API overview
 

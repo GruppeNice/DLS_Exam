@@ -87,7 +87,7 @@ flowchart TB
 | `recommendation-service` | Implemented | Python/FastAPI, Scikit-learn NMF, RabbitMQ consumer, trending API |
 | `engagement-service` | Scaffold only | Async/KEDA ScaledJob planned |
 | `frontend/` | Scaffold only | React + TypeScript + Vite planned |
-| `infra/docker` | Scaffold only | Per-service compose exists; root compose planned |
+| `infra/docker` | Implemented | Shared Dockerfiles + unified compose with one RabbitMQ |
 | `infra/k8s` | Scaffold only | Local K8s (Minikube/k3s) planned |
 | `infra/messaging` | Scaffold only | Shared broker topology planned |
 | `infra/observability` | Scaffold only | Prometheus/Grafana planned |
@@ -140,7 +140,7 @@ docker compose up --build
 | Path | `services/billing-service` |
 | Port | `8084` |
 | Database | PostgreSQL `billing_db` on host `5433` |
-| RabbitMQ | `5673` / UI `15673` |
+| RabbitMQ | `5672` / UI `15672` (shared) |
 | Exchange | `billing.events` |
 | API style | REST |
 | Auth | Validates JWT from User Service |
@@ -176,7 +176,7 @@ docker compose up --build
 | Path | `services/streaming-service` |
 | Port | `8083` |
 | Database | PostgreSQL `streaming_db` on host `5434` |
-| RabbitMQ | `5674` / UI `15674` |
+| RabbitMQ | `5672` / UI `15672` (shared) |
 | Exchange | `streaming.events` |
 | API style | REST (command-based / CQRS) |
 | Auth | Validates JWT from User Service |
@@ -239,7 +239,7 @@ docker compose up --build
 | Stack | Python 3.12 + FastAPI + Scikit-learn + Pandas + NumPy |
 | Port | `8090` |
 | Database | PostgreSQL `recommendation_db` on host `5435` |
-| RabbitMQ | `5675` / UI `15675` |
+| RabbitMQ | `5672` / UI `15672` (shared) |
 | API style | REST (query-based recommendations) |
 | Auth | JWT for personalized endpoint |
 
@@ -292,15 +292,18 @@ docker compose up --build
 | Billing Service | 8084 | `billing-service` |
 | Recommendation Service | 8090 | `recommendation-service` |
 | User DB | 5432 | `user-service-db` |
+| RabbitMQ | `5672` / UI `15672` | `dls-rabbitmq` (shared) |
 | Billing DB | 5433 | `billing-service-db` |
 | Streaming DB | 5434 | `streaming-service-db` |
 | Recommendation DB | 5435 | `recommendation-service-db` |
-| User RabbitMQ | 5672 / 15672 | `user-service-rabbitmq` |
-| Billing RabbitMQ | 5673 / 15673 | `billing-service-rabbitmq` |
-| Streaming RabbitMQ | 5674 / 15674 | `streaming-service-rabbitmq` |
-| Recommendation RabbitMQ | 5675 / 15675 | `recommendation-service-rabbitmq` |
 
-Each implemented service currently ships its **own** docker-compose stack (isolated DB + broker). A unified `infra/docker` compose is planned to run the full platform together with one command.
+The platform uses **one shared RabbitMQ** and **database-per-service** PostgreSQL instances. Run everything from the repo root:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml up --build
+```
+
+Per-service `docker-compose.yml` files include the shared compose definition for convenience.
 
 ---
 
@@ -525,7 +528,7 @@ docker compose up --build
 
 ## 14. What to implement next (suggested order)
 
-1. `infra/docker` — unified compose wiring User + Billing + Streaming + shared RabbitMQ
+1. ~~`infra/docker` — unified compose wiring User + Billing + Streaming + shared RabbitMQ~~ (done)
 2. `catalog-service` — GraphQL content API
 3. API Gateway — single frontend entry point
 4. `frontend/` — shell app consuming gateway

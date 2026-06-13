@@ -13,31 +13,32 @@ Spring Boot streaming/playback microservice implementing:
 ## Run locally
 
 ```bash
-mvn spring-boot:run
+# from repository root
+mvn spring-boot:run -pl services/streaming-service
 ```
 
-Requires PostgreSQL, RabbitMQ, and Billing Service (for subscription checks).
+Requires Billing Service for subscription checks when testing playback.
 
-## Build Docker image
+## Docker
+
+From the **repository root**:
 
 ```bash
-docker build -t dls/streaming-service:local .
-docker run --rm -p 8083:8083 dls/streaming-service:local
+docker compose -f infra/docker/docker-compose.yml up --build streaming-service streaming-service-db billing-service rabbitmq
 ```
 
-## Run with Docker Compose
+Or from this folder:
 
 ```bash
-docker compose up --build
+docker compose up --build streaming-service streaming-service-db billing-service rabbitmq
 ```
 
 This starts:
 
 - `streaming-service` on `http://localhost:8083`
 - PostgreSQL on `localhost:5434`
-- RabbitMQ on `localhost:5674` and management UI on `http://localhost:15674` (`guest`/`guest`)
-
-When running in Docker, the service calls Billing at `http://host.docker.internal:8084`. Start billing-service separately for subscription validation to work.
+- Shared RabbitMQ on `localhost:5672`
+- `billing-service` on `http://billing-service:8084` inside the compose network
 
 ## API overview
 
