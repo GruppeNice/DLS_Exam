@@ -1,0 +1,17 @@
+asyncapi: 2.6.0
+info:
+  title: Streaming Service Events
+  version: 1.0.0
+channels:
+  playback.started:
+    publish:
+      message:
+        name: PlaybackStarted
+  playback.stopped:
+    publish:
+      message:
+        name: PlaybackStopped
+  playback.progress.updated:
+    publish:
+      message:
+        name: PlaybackProgressUpdated

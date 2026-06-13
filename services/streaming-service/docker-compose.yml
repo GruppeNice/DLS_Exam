@@ -1,0 +1,60 @@
+services:
+  streaming-service-db:
+    image: postgres:16
+    container_name: streaming-service-db
+    environment:
+      POSTGRES_DB: streaming_db
+      POSTGRES_USER: streaming_user
+      POSTGRES_PASSWORD: streaming_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - streaming_service_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U streaming_user -d streaming_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  streaming-service-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: streaming-service-rabbitmq
+    ports:
+      - "5674:5672"
+      - "15674:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  streaming-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: streaming-service
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://streaming-service-db:5432/streaming_db
+      DB_USERNAME: streaming_user
+      DB_PASSWORD: streaming_password
+      RABBITMQ_HOST: streaming-service-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      STREAMING_EVENTS_EXCHANGE: streaming.events
+      JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+      BILLING_SERVICE_BASE_URL: http://host.docker.internal:8084
+      DRM_SIMULATED_FAILURE_RATE: 0.0
+    ports:
+      - "8083:8083"
+    depends_on:
+      streaming-service-db:
+        condition: service_healthy
+      streaming-service-rabbitmq:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  streaming_service_db_data:

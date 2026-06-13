@@ -74,3 +74,7 @@ This convention is documented here to avoid repeating identical `README.md` file
 - Implement each service with independent runtime and data ownership.
 - Define shared contracts in `packages/contracts`.
 - Add local orchestration in `infra/docker` and `infra/k8s`.
+
+## Operations guide
+
+See [`docs/PROJECT_RUNBOOK.md`](docs/PROJECT_RUNBOOK.md) for the full-stack runbook: ports, auth flow, event catalog, local dev workflows, and implementation status across every layer.
