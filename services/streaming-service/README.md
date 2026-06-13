@@ -36,7 +36,7 @@ docker compose up --build streaming-service streaming-service-db billing-service
 This starts:
 
 - `streaming-service` on `http://localhost:8083`
-- PostgreSQL on `localhost:5434`
+- MySQL on `localhost:3308`
 - Shared RabbitMQ on `localhost:5672`
 - `billing-service` on `http://billing-service:8084` inside the compose network
 

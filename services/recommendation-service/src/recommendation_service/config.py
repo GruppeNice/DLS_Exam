@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     server_port: int = 8090
     database_url: str = (
-        "postgresql+psycopg2://recommendation_user:recommendation_password@localhost:5435/recommendation_db"
+        "mysql+pymysql://recommendation_user:recommendation_password@localhost:3309/recommendation_db"
     )
     rabbitmq_host: str = "localhost"
     rabbitmq_port: int = 5672

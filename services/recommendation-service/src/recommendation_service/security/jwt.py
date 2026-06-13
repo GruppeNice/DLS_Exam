@@ -23,7 +23,7 @@ def _decode_token(token: str) -> UserPrincipal:
     settings = get_settings()
     secret = base64.b64decode(settings.jwt_secret_base64)
     try:
-        claims = jwt.decode(token, secret, algorithms=["HS256"])
+        claims = jwt.decode(token, secret, algorithms=["HS256", "HS384", "HS512"])
     except jwt.PyJWTError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
 

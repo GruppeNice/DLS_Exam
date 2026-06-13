@@ -1,0 +1,34 @@
+server:
+  port: ${SERVER_PORT:8086}
+
+spring:
+  application:
+    name: engagement-service
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3312/engagement_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC}
+    username: ${DB_USERNAME:engagement_user}
+    password: ${DB_PASSWORD:engagement_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE:false}
+
+notification:
+  mail:
+    from: ${SPRING_MAIL_FROM:noreply@dls.local}

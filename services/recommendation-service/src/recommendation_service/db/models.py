@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import DateTime, Float, Integer, String, Text, create_engine, func, JSON
+from sqlalchemy import DateTime, Float, Integer, String, Text, create_engine, func, inspect, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 
@@ -60,7 +60,14 @@ def create_session_factory(database_url: str):
 def init_database(engine, *, apply_sql_schema: bool = True) -> None:
     if apply_sql_schema:
         schema_path = Path(__file__).with_name("schema.sql")
-        if schema_path.exists():
+        inspector = inspect(engine)
+        if schema_path.exists() and not inspector.has_table("user_content_interactions"):
+            statements = [
+                statement.strip()
+                for statement in schema_path.read_text(encoding="utf-8").split(";")
+                if statement.strip()
+            ]
             with engine.begin() as connection:
-                connection.exec_driver_sql(schema_path.read_text(encoding="utf-8"))
+                for statement in statements:
+                    connection.exec_driver_sql(statement)
     Base.metadata.create_all(bind=engine)

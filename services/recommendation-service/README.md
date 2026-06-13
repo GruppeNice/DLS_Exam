@@ -14,7 +14,7 @@ Python AI recommendation microservice implementing:
 
 - Python 3.12
 - FastAPI + Uvicorn
-- SQLAlchemy + PostgreSQL
+- SQLAlchemy + MySQL
 - Pandas + NumPy + Scikit-learn
 - Pika (RabbitMQ)
 - PyJWT
@@ -31,7 +31,7 @@ set PYTHONPATH=src
 uvicorn recommendation_service.main:app --reload --port 8090 --app-dir src
 ```
 
-Requires PostgreSQL and RabbitMQ (or use shared Docker Compose).
+Requires MySQL and RabbitMQ (or use shared Docker Compose).
 
 ## Docker
 
@@ -50,7 +50,7 @@ docker compose up --build recommendation-service recommendation-service-db rabbi
 This starts:
 
 - `recommendation-service` on `http://localhost:8090`
-- PostgreSQL on `localhost:5435`
+- MySQL on `localhost:3309`
 - Shared RabbitMQ on `localhost:5672` / UI `http://localhost:15672`
 
 API docs: `http://localhost:8090/docs`

@@ -1,38 +1,38 @@
 CREATE TABLE IF NOT EXISTS user_content_interactions (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL,
-    content_id UUID NOT NULL,
-    interaction_weight DOUBLE PRECISION NOT NULL DEFAULT 0,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id CHAR(36) NOT NULL,
+    content_id CHAR(36) NOT NULL,
+    interaction_weight DOUBLE NOT NULL DEFAULT 0,
     source_event VARCHAR(60) NOT NULL,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (user_id, content_id)
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    UNIQUE KEY uk_interactions_user_content (user_id, content_id)
 );
 
 CREATE TABLE IF NOT EXISTS user_recommendations (
-    id SERIAL PRIMARY KEY,
-    user_id UUID NOT NULL UNIQUE,
-    content_ids JSONB NOT NULL,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id CHAR(36) NOT NULL UNIQUE,
+    content_ids JSON NOT NULL,
+    generated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE TABLE IF NOT EXISTS trending_content (
-    id SERIAL PRIMARY KEY,
-    content_id UUID NOT NULL UNIQUE,
-    score DOUBLE PRECISION NOT NULL DEFAULT 0,
-    play_count INTEGER NOT NULL DEFAULT 0,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    content_id CHAR(36) NOT NULL UNIQUE,
+    score DOUBLE NOT NULL DEFAULT 0,
+    play_count INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE TABLE IF NOT EXISTS model_runs (
-    id SERIAL PRIMARY KEY,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     model_type VARCHAR(40) NOT NULL,
     status VARCHAR(20) NOT NULL,
-    user_count INTEGER NOT NULL DEFAULT 0,
-    content_count INTEGER NOT NULL DEFAULT 0,
-    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMPTZ
+    user_count INT NOT NULL DEFAULT 0,
+    content_count INT NOT NULL DEFAULT 0,
+    started_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    completed_at TIMESTAMP(6) NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_interactions_user_id ON user_content_interactions (user_id);
-CREATE INDEX IF NOT EXISTS idx_interactions_content_id ON user_content_interactions (content_id);
-CREATE INDEX IF NOT EXISTS idx_trending_score ON trending_content (score DESC);
+CREATE INDEX idx_interactions_user_id ON user_content_interactions (user_id);
+CREATE INDEX idx_interactions_content_id ON user_content_interactions (content_id);
+CREATE INDEX idx_trending_score ON trending_content (score DESC);

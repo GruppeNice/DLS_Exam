@@ -37,7 +37,7 @@ This starts:
 - `catalog-service` on `http://localhost:8082`
 - GraphQL endpoint `http://localhost:8082/graphql`
 - GraphiQL UI `http://localhost:8082/graphiql`
-- PostgreSQL on `localhost:5436`
+- MySQL on `localhost:3310`
 - Shared RabbitMQ on `localhost:5672` / UI `http://localhost:15672`
 
 ## GraphQL overview

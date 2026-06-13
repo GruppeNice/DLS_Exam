@@ -1,7 +1,7 @@
-x-healthcheck-postgres: &healthcheck-postgres
+x-healthcheck-mysql: &healthcheck-mysql
   interval: 5s
   timeout: 5s
-  retries: 10
+  retries: 15
 
 x-healthcheck-rabbitmq: &healthcheck-rabbitmq
   interval: 10s
@@ -10,6 +10,9 @@ x-healthcheck-rabbitmq: &healthcheck-rabbitmq
 
 x-jwt-secret: &jwt-secret
   JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+
+x-mysql-root-password: &mysql-root-password
+  MYSQL_ROOT_PASSWORD: root_password
 
 services:
   rabbitmq:
@@ -22,80 +25,124 @@ services:
       <<: *healthcheck-rabbitmq
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
 
+  mailhog:
+    image: mailhog/mailhog
+    container_name: dls-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   user-service-db:
-    image: postgres:16
+    image: mysql:8.4
     container_name: user-service-db
     environment:
-      POSTGRES_DB: user_db
-      POSTGRES_USER: user_user
-      POSTGRES_PASSWORD: user_password
+      <<: *mysql-root-password
+      MYSQL_DATABASE: user_db
+      MYSQL_USER: user_user
+      MYSQL_PASSWORD: user_password
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - user_service_db_data:/var/lib/postgresql/data
+      - user_service_db_data:/var/lib/mysql
     healthcheck:
-      <<: *healthcheck-postgres
-      test: ["CMD-SHELL", "pg_isready -U user_user -d user_db"]
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
 
   billing-service-db:
-    image: postgres:16
+    image: mysql:8.4
     container_name: billing-service-db
     environment:
-      POSTGRES_DB: billing_db
-      POSTGRES_USER: billing_user
-      POSTGRES_PASSWORD: billing_password
+      <<: *mysql-root-password
+      MYSQL_DATABASE: billing_db
+      MYSQL_USER: billing_user
+      MYSQL_PASSWORD: billing_password
     ports:
-      - "5433:5432"
+      - "3307:3306"
     volumes:
-      - billing_service_db_data:/var/lib/postgresql/data
+      - billing_service_db_data:/var/lib/mysql
     healthcheck:
-      <<: *healthcheck-postgres
-      test: ["CMD-SHELL", "pg_isready -U billing_user -d billing_db"]
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
 
   streaming-service-db:
-    image: postgres:16
+    image: mysql:8.4
     container_name: streaming-service-db
     environment:
-      POSTGRES_DB: streaming_db
-      POSTGRES_USER: streaming_user
-      POSTGRES_PASSWORD: streaming_password
+      <<: *mysql-root-password
+      MYSQL_DATABASE: streaming_db
+      MYSQL_USER: streaming_user
+      MYSQL_PASSWORD: streaming_password
     ports:
-      - "5434:5432"
+      - "3308:3306"
     volumes:
-      - streaming_service_db_data:/var/lib/postgresql/data
+      - streaming_service_db_data:/var/lib/mysql
     healthcheck:
-      <<: *healthcheck-postgres
-      test: ["CMD-SHELL", "pg_isready -U streaming_user -d streaming_db"]
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
 
   recommendation-service-db:
-    image: postgres:16
+    image: mysql:8.4
     container_name: recommendation-service-db
     environment:
-      POSTGRES_DB: recommendation_db
-      POSTGRES_USER: recommendation_user
-      POSTGRES_PASSWORD: recommendation_password
+      <<: *mysql-root-password
+      MYSQL_DATABASE: recommendation_db
+      MYSQL_USER: recommendation_user
+      MYSQL_PASSWORD: recommendation_password
     ports:
-      - "5435:5432"
+      - "3309:3306"
     volumes:
-      - recommendation_service_db_data:/var/lib/postgresql/data
+      - recommendation_service_db_data:/var/lib/mysql
     healthcheck:
-      <<: *healthcheck-postgres
-      test: ["CMD-SHELL", "pg_isready -U recommendation_user -d recommendation_db"]
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
 
   catalog-service-db:
-    image: postgres:16
+    image: mysql:8.4
     container_name: catalog-service-db
     environment:
-      POSTGRES_DB: catalog_db
-      POSTGRES_USER: catalog_user
-      POSTGRES_PASSWORD: catalog_password
+      <<: *mysql-root-password
+      MYSQL_DATABASE: catalog_db
+      MYSQL_USER: catalog_user
+      MYSQL_PASSWORD: catalog_password
     ports:
-      - "5436:5432"
+      - "3310:3306"
     volumes:
-      - catalog_service_db_data:/var/lib/postgresql/data
+      - catalog_service_db_data:/var/lib/mysql
     healthcheck:
-      <<: *healthcheck-postgres
-      test: ["CMD-SHELL", "pg_isready -U catalog_user -d catalog_db"]
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+
+  review-rating-service-db:
+    image: mysql:8.4
+    container_name: review-rating-service-db
+    environment:
+      <<: *mysql-root-password
+      MYSQL_DATABASE: review_db
+      MYSQL_USER: review_user
+      MYSQL_PASSWORD: review_password
+    ports:
+      - "3311:3306"
+    volumes:
+      - review_rating_service_db_data:/var/lib/mysql
+    healthcheck:
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
+
+  engagement-service-db:
+    image: mysql:8.4
+    container_name: engagement-service-db
+    environment:
+      <<: *mysql-root-password
+      MYSQL_DATABASE: engagement_db
+      MYSQL_USER: engagement_user
+      MYSQL_PASSWORD: engagement_password
+    ports:
+      - "3312:3306"
+    volumes:
+      - engagement_service_db_data:/var/lib/mysql
+    healthcheck:
+      <<: *healthcheck-mysql
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot_password"]
 
   user-service:
     build:
@@ -106,10 +153,11 @@ services:
         SERVICE_ARTIFACT: user-service
         SERVICE_PORT: 8081
     container_name: user-service
+    restart: unless-stopped
     environment:
       <<: *jwt-secret
       SERVER_PORT: 8081
-      DB_URL: jdbc:postgresql://user-service-db:5432/user_db
+      DB_URL: jdbc:mysql://user-service-db:3306/user_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: user_user
       DB_PASSWORD: user_password
       RABBITMQ_HOST: rabbitmq
@@ -138,7 +186,7 @@ services:
     environment:
       <<: *jwt-secret
       SERVER_PORT: 8084
-      DB_URL: jdbc:postgresql://billing-service-db:5432/billing_db
+      DB_URL: jdbc:mysql://billing-service-db:3306/billing_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: billing_user
       DB_PASSWORD: billing_password
       RABBITMQ_HOST: rabbitmq
@@ -167,7 +215,7 @@ services:
     environment:
       <<: *jwt-secret
       SERVER_PORT: 8083
-      DB_URL: jdbc:postgresql://streaming-service-db:5432/streaming_db
+      DB_URL: jdbc:mysql://streaming-service-db:3306/streaming_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: streaming_user
       DB_PASSWORD: streaming_password
       RABBITMQ_HOST: rabbitmq
@@ -195,10 +243,11 @@ services:
         SERVICE_PATH: services/recommendation-service
         SERVICE_PORT: 8090
     container_name: recommendation-service
+    restart: unless-stopped
     environment:
       <<: *jwt-secret
       SERVER_PORT: 8090
-      DATABASE_URL: postgresql+psycopg2://recommendation_user:recommendation_password@recommendation-service-db:5432/recommendation_db
+      DATABASE_URL: mysql+pymysql://recommendation_user:recommendation_password@recommendation-service-db:3306/recommendation_db
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: guest
@@ -228,7 +277,7 @@ services:
     environment:
       <<: *jwt-secret
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://catalog-service-db:5432/catalog_db
+      DB_URL: jdbc:mysql://catalog-service-db:3306/catalog_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: catalog_user
       DB_PASSWORD: catalog_password
       RABBITMQ_HOST: rabbitmq
@@ -245,9 +294,82 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  review-rating-service:
+    build:
+      context: ../../services/review-rating-service
+      dockerfile: Dockerfile
+    container_name: review-rating-service
+    environment:
+      SERVER_PORT: 8085
+      DB_URL: jdbc:mysql://review-rating-service-db:3306/review_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      DB_USERNAME: review_user
+      DB_PASSWORD: review_password
+    ports:
+      - "8085:8085"
+    depends_on:
+      review-rating-service-db:
+        condition: service_healthy
+
+  engagement-service:
+    build:
+      context: ../../services/engagement-service
+      dockerfile: Dockerfile
+    container_name: engagement-service
+    environment:
+      SERVER_PORT: 8086
+      DB_URL: jdbc:mysql://engagement-service-db:3306/engagement_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+      DB_USERNAME: engagement_user
+      DB_PASSWORD: engagement_password
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+      SPRING_MAIL_FROM: noreply@dls.local
+    ports:
+      - "8086:8086"
+    depends_on:
+      engagement-service-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    container_name: dls-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      user-service:
+        condition: service_started
+      catalog-service:
+        condition: service_started
+      streaming-service:
+        condition: service_started
+      billing-service:
+        condition: service_started
+      review-rating-service:
+        condition: service_started
+      engagement-service:
+        condition: service_started
+      recommendation-service:
+        condition: service_started
+
 volumes:
   user_service_db_data:
   billing_service_db_data:
   streaming_service_db_data:
   recommendation_service_db_data:
   catalog_service_db_data:
+  review_rating_service_db_data:
+  engagement_service_db_data:

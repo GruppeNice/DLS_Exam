@@ -35,7 +35,7 @@ docker compose up --build billing-service billing-service-db rabbitmq
 This starts:
 
 - `billing-service` on `http://localhost:8084`
-- PostgreSQL on `localhost:5433`
+- MySQL on `localhost:3307`
 - Shared RabbitMQ on `localhost:5672` / UI `http://localhost:15672`
 
 ## API overview

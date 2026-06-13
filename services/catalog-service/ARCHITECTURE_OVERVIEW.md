@@ -13,7 +13,7 @@ GraphQL-based content metadata service for the DLS streaming platform.
 
 - Java 21, Spring Boot 3.5 (parent POM)
 - Spring for GraphQL + GraphiQL
-- Spring Data JPA + PostgreSQL 16
+- Spring Data JPA + MySQL 8
 - Flyway migrations
 - Spring AMQP + RabbitMQ topic exchanges
 - JWT validation (shared secret with User Service)
@@ -50,12 +50,12 @@ Queue: `catalog-service.review-events`
 
 - **CQRS**: GraphQL query API; mutations for metadata commands
 - **Tombstone pattern**: `deleted` flag + `content.removed` event with `tombstone: true`
-- **Database-per-service**: dedicated `catalog_db` on port `5436`
+- **Database-per-service**: dedicated `catalog_db` on port `3310`
 
 ## Local ports
 
 | Component | Port |
 |-----------|------|
 | Catalog Service | 8082 |
-| PostgreSQL | 5436 |
+| MySQL | 3310 |
 | RabbitMQ | 5672 |

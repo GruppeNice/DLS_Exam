@@ -34,5 +34,5 @@ docker compose up --build user-service user-service-db rabbitmq
 
 Endpoints when running:
 - `user-service` on `http://localhost:8081`
-- PostgreSQL on `localhost:5432`
+- MySQL on `localhost:3306`
 - RabbitMQ on `localhost:5672` and management UI on `http://localhost:15672` (`guest`/`guest`)
