@@ -1,0 +1,988 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dls-secrets
+type: Opaque
+stringData:
+  JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+  MYSQL_ROOT_PASSWORD: root_password
+  USER_DB_PASSWORD: user_password
+  BILLING_DB_PASSWORD: billing_password
+  STREAMING_DB_PASSWORD: streaming_password
+  RECOMMENDATION_DB_PASSWORD: recommendation_password
+  CATALOG_DB_PASSWORD: catalog_password
+  REVIEW_DB_PASSWORD: review_password
+  ENGAGEMENT_DB_PASSWORD: engagement_password
+  RABBITMQ_USERNAME: guest
+  RABBITMQ_PASSWORD: guest
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailhog
+spec:
+  selector:
+    app: mailhog
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+    - name: http
+      port: 8025
+      targetPort: 8025
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailhog
+  template:
+    metadata:
+      labels:
+        app: mailhog
+    spec:
+      containers:
+        - name: mailhog
+          image: mailhog/mailhog
+          ports:
+            - containerPort: 1025
+            - containerPort: 8025
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service-db
+spec:
+  selector:
+    app: user-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service-db
+  template:
+    metadata:
+      labels:
+        app: user-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: user_db
+            - name: MYSQL_USER
+              value: user_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: USER_DB_PASSWORD
+          volumeMounts:
+            - name: user-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: user-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service-db
+spec:
+  selector:
+    app: billing-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service-db
+  template:
+    metadata:
+      labels:
+        app: billing-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: billing_db
+            - name: MYSQL_USER
+              value: billing_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: BILLING_DB_PASSWORD
+          volumeMounts:
+            - name: billing-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: billing-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service-db
+spec:
+  selector:
+    app: streaming-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-service-db
+  template:
+    metadata:
+      labels:
+        app: streaming-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: streaming_db
+            - name: MYSQL_USER
+              value: streaming_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: STREAMING_DB_PASSWORD
+          volumeMounts:
+            - name: streaming-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: streaming-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-service-db
+spec:
+  selector:
+    app: recommendation-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-service-db
+  template:
+    metadata:
+      labels:
+        app: recommendation-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: recommendation_db
+            - name: MYSQL_USER
+              value: recommendation_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RECOMMENDATION_DB_PASSWORD
+          volumeMounts:
+            - name: recommendation-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: recommendation-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service-db
+spec:
+  selector:
+    app: catalog-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-service-db
+  template:
+    metadata:
+      labels:
+        app: catalog-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: catalog_db
+            - name: MYSQL_USER
+              value: catalog_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: CATALOG_DB_PASSWORD
+          volumeMounts:
+            - name: catalog-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: catalog-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: review-rating-service-db
+spec:
+  selector:
+    app: review-rating-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: review-rating-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: review-rating-service-db
+  template:
+    metadata:
+      labels:
+        app: review-rating-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: review_db
+            - name: MYSQL_USER
+              value: review_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: REVIEW_DB_PASSWORD
+          volumeMounts:
+            - name: review-rating-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: review-rating-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engagement-service-db
+spec:
+  selector:
+    app: engagement-service-db
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engagement-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engagement-service-db
+  template:
+    metadata:
+      labels:
+        app: engagement-service-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: engagement_db
+            - name: MYSQL_USER
+              value: engagement_user
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: ENGAGEMENT_DB_PASSWORD
+          volumeMounts:
+            - name: engagement-service-db-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: engagement-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: dls/user-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8081"
+            - name: DB_URL
+              value: jdbc:mysql://user-service-db:3306/user_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: user_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: USER_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: USER_EVENTS_EXCHANGE
+              value: user.events
+            - name: JWT_EXPIRATION_SECONDS
+              value: "3600"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service
+spec:
+  selector:
+    app: billing-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+        - name: billing-service
+          image: dls/billing-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8084"
+            - name: DB_URL
+              value: jdbc:mysql://billing-service-db:3306/billing_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: billing_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: BILLING_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: BILLING_EVENTS_EXCHANGE
+              value: billing.events
+            - name: PAYMENT_SIMULATED_FAILURE_RATE
+              value: "0.0"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service
+spec:
+  selector:
+    app: streaming-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-service
+  template:
+    metadata:
+      labels:
+        app: streaming-service
+    spec:
+      containers:
+        - name: streaming-service
+          image: dls/streaming-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8083"
+            - name: DB_URL
+              value: jdbc:mysql://streaming-service-db:3306/streaming_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: streaming_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: STREAMING_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: STREAMING_EVENTS_EXCHANGE
+              value: streaming.events
+            - name: BILLING_SERVICE_BASE_URL
+              value: http://billing-service:8084
+            - name: DRM_SIMULATED_FAILURE_RATE
+              value: "0.0"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog-service
+spec:
+  selector:
+    app: catalog-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-service
+  template:
+    metadata:
+      labels:
+        app: catalog-service
+    spec:
+      containers:
+        - name: catalog-service
+          image: dls/catalog-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8082"
+            - name: DB_URL
+              value: jdbc:mysql://catalog-service-db:3306/catalog_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: catalog_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: CATALOG_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: CATALOG_EVENTS_EXCHANGE
+              value: catalog.events
+            - name: REVIEW_EVENTS_EXCHANGE
+              value: review.events
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-service
+spec:
+  selector:
+    app: recommendation-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-service
+  template:
+    metadata:
+      labels:
+        app: recommendation-service
+    spec:
+      containers:
+        - name: recommendation-service
+          image: dls/recommendation-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8090"
+            - name: DATABASE_URL
+              value: mysql+pymysql://recommendation_user:recommendation_password@recommendation-service-db:3306/recommendation_db
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: STREAMING_EVENTS_EXCHANGE
+              value: streaming.events
+            - name: BILLING_EVENTS_EXCHANGE
+              value: billing.events
+            - name: REVIEW_EVENTS_EXCHANGE
+              value: review.events
+            - name: MODEL_RETRAIN_INTERVAL_MINUTES
+              value: "30"
+            - name: RECOMMENDATION_LIST_SIZE
+              value: "10"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: review-rating-service
+spec:
+  selector:
+    app: review-rating-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: review-rating-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: review-rating-service
+  template:
+    metadata:
+      labels:
+        app: review-rating-service
+    spec:
+      containers:
+        - name: review-rating-service
+          image: dls/review-rating-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8085
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+            - name: DB_URL
+              value: jdbc:mysql://review-rating-service-db:3306/review_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: review_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: REVIEW_DB_PASSWORD
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engagement-service
+spec:
+  selector:
+    app: engagement-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engagement-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engagement-service
+  template:
+    metadata:
+      labels:
+        app: engagement-service
+    spec:
+      containers:
+        - name: engagement-service
+          image: dls/engagement-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8086
+          env:
+            - name: SERVER_PORT
+              value: "8086"
+            - name: DB_URL
+              value: jdbc:mysql://engagement-service-db:3306/engagement_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+            - name: DB_USERNAME
+              value: engagement_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: ENGAGEMENT_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: SPRING_MAIL_HOST
+              value: mailhog
+            - name: SPRING_MAIL_PORT
+              value: "1025"
+            - name: SPRING_MAIL_USERNAME
+              value: ""
+            - name: SPRING_MAIL_PASSWORD
+              value: ""
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+              value: "false"
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+              value: "false"
+            - name: SPRING_MAIL_FROM
+              value: noreply@dls.local
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: dls/frontend:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
