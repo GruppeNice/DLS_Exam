@@ -18,8 +18,10 @@ public class RatingService {
     }
 
     public void addRating(RatingRequest rating){
-        Rating newRating = ratingRepository.save(fromDTO(rating));
-        if(newRating.getId()==null){
+        Rating newRating = fromDTO(rating);
+        newRating.setId(UUID.randomUUID());
+        Rating savedRating = ratingRepository.save(newRating);
+        if(savedRating.getId()==null){
             throw new IllegalArgumentException("Failed to save rating");
         }
     }

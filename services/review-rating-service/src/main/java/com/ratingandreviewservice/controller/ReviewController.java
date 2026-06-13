@@ -1,6 +1,7 @@
 package com.ratingandreviewservice.controller;
 
 import com.ratingandreviewservice.dto.ReviewRequest;
+import com.ratingandreviewservice.dto.ReviewResponse;
 import com.ratingandreviewservice.service.ReviewService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +19,9 @@ public class ReviewController {
     }
 
     @GetMapping("/{reviewId}")
-    public ResponseEntity<Void> getReviewById(@PathVariable("reviewId") UUID reviewId){
-        reviewService.getReviewById(reviewId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ReviewResponse> getReviewById(@PathVariable UUID reviewId){
+        ReviewResponse reviewResponse = reviewService.getReviewById(reviewId);
+        return ResponseEntity.ok(reviewResponse);
     }
 
     @PostMapping("/add")

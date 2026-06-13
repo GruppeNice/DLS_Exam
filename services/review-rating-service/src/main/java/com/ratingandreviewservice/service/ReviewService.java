@@ -18,8 +18,10 @@ public class ReviewService {
     }
 
     public void addReview(ReviewRequest review){
-        Review reviewEntity = reviewRepository.save(fromDTO(review));
-        if(reviewEntity.getId()==null){
+        Review newReview = fromDTO(review);
+        newReview.setId(UUID.randomUUID());
+        Review savedReview = reviewRepository.save(newReview);
+        if(savedReview.getId()==null){
             throw new IllegalArgumentException("Failed to save review");
         }
     }

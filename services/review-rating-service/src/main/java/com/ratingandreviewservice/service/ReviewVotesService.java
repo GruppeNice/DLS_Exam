@@ -27,7 +27,9 @@ public class ReviewVotesService {
         if(reviewRepository.findById(reviewVotesRequest.reviewId()).isEmpty()){
             throw new IllegalArgumentException("Review with id " + reviewVotesRequest.reviewId() + " not found");
         }
-        reviewVotesRepository.save(fromDTO(reviewVotesRequest));
+        ReviewVote newReviewVote = fromDTO(reviewVotesRequest);
+        newReviewVote.setId(UUID.randomUUID());
+        reviewVotesRepository.save(newReviewVote);
     }
 
     public List<ReviewVotesResponse> getReviewVotesByReviewId(UUID reviewId){
