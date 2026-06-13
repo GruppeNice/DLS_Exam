@@ -1,0 +1,534 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dls-secrets
+type: Opaque
+stringData:
+  JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+  USER_DB_PASSWORD: user_password
+  BILLING_DB_PASSWORD: billing_password
+  STREAMING_DB_PASSWORD: streaming_password
+  RECOMMENDATION_DB_PASSWORD: recommendation_password
+  RABBITMQ_USERNAME: guest
+  RABBITMQ_PASSWORD: guest
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3-management
+          ports:
+            - containerPort: 5672
+            - containerPort: 15672
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service-db
+spec:
+  selector:
+    app: user-service-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service-db
+  template:
+    metadata:
+      labels:
+        app: user-service-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: user_db
+            - name: POSTGRES_USER
+              value: user_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: USER_DB_PASSWORD
+          volumeMounts:
+            - name: user-service-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: user-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service-db
+spec:
+  selector:
+    app: billing-service-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service-db
+  template:
+    metadata:
+      labels:
+        app: billing-service-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: billing_db
+            - name: POSTGRES_USER
+              value: billing_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: BILLING_DB_PASSWORD
+          volumeMounts:
+            - name: billing-service-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: billing-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service-db
+spec:
+  selector:
+    app: streaming-service-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-service-db
+  template:
+    metadata:
+      labels:
+        app: streaming-service-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: streaming_db
+            - name: POSTGRES_USER
+              value: streaming_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: STREAMING_DB_PASSWORD
+          volumeMounts:
+            - name: streaming-service-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: streaming-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-service-db
+spec:
+  selector:
+    app: recommendation-service-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-service-db
+  template:
+    metadata:
+      labels:
+        app: recommendation-service-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: recommendation_db
+            - name: POSTGRES_USER
+              value: recommendation_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RECOMMENDATION_DB_PASSWORD
+          volumeMounts:
+            - name: recommendation-service-db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: recommendation-service-db-data
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+spec:
+  selector:
+    app: user-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+        - name: user-service
+          image: dls/user-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8081"
+            - name: DB_URL
+              value: jdbc:postgresql://user-service-db:5432/user_db
+            - name: DB_USERNAME
+              value: user_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: USER_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: USER_EVENTS_EXCHANGE
+              value: user.events
+
+            - name: JWT_EXPIRATION_SECONDS
+              value: "3600"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: billing-service
+spec:
+  selector:
+    app: billing-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: billing-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: billing-service
+  template:
+    metadata:
+      labels:
+        app: billing-service
+    spec:
+      containers:
+        - name: billing-service
+          image: dls/billing-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8084"
+            - name: DB_URL
+              value: jdbc:postgresql://billing-service-db:5432/billing_db
+            - name: DB_USERNAME
+              value: billing_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: BILLING_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: BILLING_EVENTS_EXCHANGE
+              value: billing.events
+            - name: PAYMENT_SIMULATED_FAILURE_RATE
+              value: "0.0"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service
+spec:
+  selector:
+    app: streaming-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-service
+  template:
+    metadata:
+      labels:
+        app: streaming-service
+    spec:
+      containers:
+        - name: streaming-service
+          image: dls/streaming-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8083"
+            - name: DB_URL
+              value: jdbc:postgresql://streaming-service-db:5432/streaming_db
+            - name: DB_USERNAME
+              value: streaming_user
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: STREAMING_DB_PASSWORD
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: STREAMING_EVENTS_EXCHANGE
+              value: streaming.events
+            - name: BILLING_SERVICE_BASE_URL
+              value: http://billing-service:8084
+            - name: DRM_SIMULATED_FAILURE_RATE
+              value: "0.0"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-service
+spec:
+  selector:
+    app: recommendation-service
+  ports:
+    - port: 8090
+      targetPort: 8090
+  type: NodePort
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-service
+  template:
+    metadata:
+      labels:
+        app: recommendation-service
+    spec:
+      containers:
+        - name: recommendation-service
+          image: dls/recommendation-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+          env:
+            - name: JWT_SECRET_BASE64
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: JWT_SECRET_BASE64
+            - name: SERVER_PORT
+              value: "8090"
+            - name: DATABASE_URL
+              value: postgresql+psycopg2://recommendation_user:recommendation_password@recommendation-service-db:5432/recommendation_db
+            - name: RABBITMQ_HOST
+              value: rabbitmq
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_USERNAME
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: dls-secrets
+                  key: RABBITMQ_PASSWORD
+            - name: STREAMING_EVENTS_EXCHANGE
+              value: streaming.events
+            - name: BILLING_EVENTS_EXCHANGE
+              value: billing.events
+            - name: REVIEW_EVENTS_EXCHANGE
+              value: review.events
+            - name: MODEL_RETRAIN_INTERVAL_MINUTES
+              value: "30"
+            - name: RECOMMENDATION_LIST_SIZE
+              value: "10"

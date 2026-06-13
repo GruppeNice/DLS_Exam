@@ -83,6 +83,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U recommendation_user -d recommendation_db"]
 
   user-service:
+    image: dls/user-service:local
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.spring-service
@@ -112,6 +113,7 @@ services:
         condition: service_healthy
 
   billing-service:
+    image: dls/billing-service:local
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.spring-service
@@ -141,6 +143,7 @@ services:
         condition: service_healthy
 
   streaming-service:
+    image: dls/streaming-service:local
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.spring-service
@@ -173,6 +176,7 @@ services:
         condition: service_started
 
   recommendation-service:
+    image: dls/recommendation-service:local
     build:
       context: ../..
       dockerfile: infra/docker/Dockerfile.python-service
