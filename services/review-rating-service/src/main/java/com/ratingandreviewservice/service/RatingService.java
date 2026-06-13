@@ -1,8 +1,12 @@
 package com.ratingandreviewservice.service;
 
+import com.ratingandreviewservice.dto.RatingRequest;
+import com.ratingandreviewservice.dto.RatingResponse;
 import com.ratingandreviewservice.model.Rating;
 import com.ratingandreviewservice.repository.RatingRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class RatingService {
@@ -13,12 +17,32 @@ public class RatingService {
         this.ratingRepository = ratingRepository;
     }
 
-    public Rating addReview(Rating rating){
-        return ratingRepository.save(rating);
+    public void addRating(RatingRequest rating){
+        Rating newRating = ratingRepository.save(fromDTO(rating));
+        if(newRating.getId()==null){
+            throw new IllegalArgumentException("Failed to save rating");
+        }
     }
 
-    public Rating getReviewById(Integer id){
-        return ratingRepository.findById(id).orElse(null);
+    public RatingResponse getRatingById(UUID id){
+        Rating rating = ratingRepository.findById(id).orElse(null);
+        if(rating == null){
+            throw new IllegalArgumentException("Rating with id " + id + " not found");
+        }
+
+        return toDTO(rating);
+    }
+
+    public RatingResponse toDTO(Rating rating){
+        return new RatingResponse(rating.getId(), rating.getUserId(), rating.getMovieId() , rating.getUserRating());
+    }
+
+    public Rating fromDTO(RatingRequest ratingDTO){
+        Rating rating = new Rating();
+        rating.setUserId(ratingDTO.userId());
+        rating.setMovieId(ratingDTO.movieId());
+        rating.setUserRating(ratingDTO.userRating());
+        return rating;
     }
 
 }
