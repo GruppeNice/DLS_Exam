@@ -1,0 +1,21 @@
+asyncapi: 2.6.0
+info:
+  title: Billing Service Events
+  version: 1.0.0
+channels:
+  subscription.activated:
+    publish:
+      message:
+        name: SubscriptionActivated
+  subscription.cancelled:
+    publish:
+      message:
+        name: SubscriptionCancelled
+  payment.succeeded:
+    publish:
+      message:
+        name: PaymentSucceeded
+  payment.failed:
+    publish:
+      message:
+        name: PaymentFailed

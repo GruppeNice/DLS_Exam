@@ -1,0 +1,57 @@
+services:
+  billing-service-db:
+    image: postgres:16
+    container_name: billing-service-db
+    environment:
+      POSTGRES_DB: billing_db
+      POSTGRES_USER: billing_user
+      POSTGRES_PASSWORD: billing_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - billing_service_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U billing_user -d billing_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  billing-service-rabbitmq:
+    image: rabbitmq:3-management
+    container_name: billing-service-rabbitmq
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: billing-service
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://billing-service-db:5432/billing_db
+      DB_USERNAME: billing_user
+      DB_PASSWORD: billing_password
+      RABBITMQ_HOST: billing-service-rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      BILLING_EVENTS_EXCHANGE: billing.events
+      JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
+      PAYMENT_SIMULATED_FAILURE_RATE: 0.0
+    ports:
+      - "8084:8084"
+    depends_on:
+      billing-service-db:
+        condition: service_healthy
+      billing-service-rabbitmq:
+        condition: service_healthy
+
+volumes:
+  billing_service_db_data:
