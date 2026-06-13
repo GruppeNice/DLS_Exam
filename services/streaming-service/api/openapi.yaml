@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Streaming Service API
+  version: 1.0.0
+paths:
+  /api/v1/playback/start:
+    post:
+      summary: Start playback session (subscription + DRM validated)
+  /api/v1/playback/sessions/me:
+    get:
+      summary: List current user playback sessions
+  /api/v1/playback/sessions/{sessionId}:
+    get:
+      summary: Get playback session by id
+  /api/v1/playback/sessions/{sessionId}/stop:
+    post:
+      summary: Stop active playback session
+  /api/v1/playback/sessions/{sessionId}/resume:
+    post:
+      summary: Resume stopped playback session
+  /api/v1/playback/sessions/{sessionId}/progress:
+    put:
+      summary: Update watch progress for active session

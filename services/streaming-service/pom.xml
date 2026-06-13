@@ -11,16 +11,9 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>user-service</artifactId>
-    <name>user-service</name>
-    <description>User Management Service for DLS Exam project</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-oauth2-client</artifactId>
-        </dependency>
-    </dependencies>
+    <artifactId>streaming-service</artifactId>
+    <name>streaming-service</name>
+    <description>Streaming and Playback Service for DLS Exam project</description>
 
     <build>
         <plugins>

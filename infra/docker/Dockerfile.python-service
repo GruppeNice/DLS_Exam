@@ -1,0 +1,20 @@
+# Build from monorepo root:
+# docker build -f infra/docker/Dockerfile.python-service --build-arg SERVICE_PATH=services/recommendation-service .
+
+FROM python:3.12-slim
+ARG SERVICE_PATH
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONPATH=/app/src
+
+COPY ${SERVICE_PATH}/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ${SERVICE_PATH}/src ./src
+COPY ${SERVICE_PATH}/api ./api
+
+ARG SERVICE_PORT=8090
+EXPOSE ${SERVICE_PORT}
+
+CMD ["uvicorn", "recommendation_service.main:app", "--host", "0.0.0.0", "--port", "8090", "--app-dir", "/app/src"]

@@ -10,23 +10,29 @@ Spring Boot user management microservice implementing:
 ## Run locally
 
 ```bash
-mvn spring-boot:run
+# from repository root
+mvn spring-boot:run -pl services/user-service
 ```
 
-## Build Docker image
+## Docker
+
+Shared Docker files live in `infra/docker/`. From the **repository root**:
 
 ```bash
-docker build -t dls/user-service:local .
-docker run --rm -p 8081:8081 dls/user-service:local
+# Full platform
+docker compose -f infra/docker/docker-compose.yml up --build
+
+# This service only (plus its DB and shared RabbitMQ)
+docker compose -f infra/docker/docker-compose.yml up --build user-service user-service-db rabbitmq
 ```
 
-## Run with Docker Compose
+Or from this folder (includes the shared compose file):
 
 ```bash
-docker compose up --build
+docker compose up --build user-service user-service-db rabbitmq
 ```
 
-This starts:
+Endpoints when running:
 - `user-service` on `http://localhost:8081`
 - PostgreSQL on `localhost:5432`
 - RabbitMQ on `localhost:5672` and management UI on `http://localhost:15672` (`guest`/`guest`)

@@ -1,0 +1,17 @@
+# Build from monorepo root:
+# docker build -f infra/docker/Dockerfile.spring-service --build-arg SERVICE_MODULE=services/user-service --build-arg SERVICE_ARTIFACT=user-service --build-arg SERVICE_PORT=8081 .
+
+FROM maven:3.9.8-eclipse-temurin-21 AS build
+ARG SERVICE_MODULE
+WORKDIR /app
+COPY pom.xml .
+COPY services ./services
+RUN mvn -q -pl ${SERVICE_MODULE} -am -DskipTests package
+
+FROM eclipse-temurin:21-jre
+ARG SERVICE_ARTIFACT
+ARG SERVICE_PORT
+WORKDIR /app
+COPY --from=build /app/services/${SERVICE_ARTIFACT}/target/${SERVICE_ARTIFACT}-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE ${SERVICE_PORT}
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,20 @@
+openapi: 3.0.3
+info:
+  title: Recommendation Service API
+  version: 1.0.0
+paths:
+  /api/v1/health:
+    get:
+      summary: Service health check
+  /api/v1/recommendations/me:
+    get:
+      summary: Personalized recommendations for current user
+  /api/v1/recommendations/trending:
+    get:
+      summary: Trending content rankings
+  /api/v1/recommendations/retrain:
+    post:
+      summary: Trigger model retraining
+  /api/v1/recommendations/interactions:
+    post:
+      summary: Manual interaction ingest for development/testing
