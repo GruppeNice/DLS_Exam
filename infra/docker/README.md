@@ -40,10 +40,11 @@ docker build -f infra/docker/Dockerfile.spring-service \
 | Service | Port |
 |---------|------|
 | user-service | 8081 |
+| catalog-service | 8082 |
 | streaming-service | 8083 |
 | billing-service | 8084 |
 | recommendation-service | 8090 |
 | rabbitmq (management UI) | 15672 |
-| PostgreSQL (user/billing/streaming/rec) | 5432 / 5433 / 5434 / 5435 |
+| PostgreSQL (user/billing/streaming/rec/catalog) | 5432 / 5433 / 5434 / 5435 / 5436 |
 
 Per-service `docker-compose.yml` files include this shared compose file for convenience.

@@ -1,0 +1,25 @@
+asyncapi: 2.6.0
+info:
+  title: Catalog Service Events
+  version: 1.0.0
+channels:
+  content.created:
+    publish:
+      message:
+        name: ContentCreated
+  content.updated:
+    publish:
+      message:
+        name: ContentUpdated
+  content.removed:
+    publish:
+      message:
+        name: ContentRemoved
+  content.rated:
+    subscribe:
+      message:
+        name: ContentRated
+  content.reviewed:
+    subscribe:
+      message:
+        name: ContentReviewed
