@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com</groupId>
-	<artifactId>rating-and-review-service</artifactId>
+	<artifactId>review-rating-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>rating-and-review-service</name>
-	<description>rating-and-review-service</description>
+	<name>review-rating-service</name>
+	<description>review-rating-service</description>
 	<url/>
 	<licenses>
 		<license/>
