@@ -1,0 +1,17 @@
+asyncapi: 2.6.0
+info:
+  title: Review & Rating Service Events
+  version: 1.0.0
+  description: |
+    Slice of the platform contract. Canonical spec:
+    packages/contracts/asyncapi/dls-platform-events.yaml
+defaultContentType: application/json
+channels:
+  review.events/content.rated:
+    publish:
+      message:
+        name: ContentRated
+  review.events/content.reviewed:
+    publish:
+      message:
+        name: ContentReviewed

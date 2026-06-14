@@ -79,6 +79,10 @@ def create_app(app_settings: Settings | None = None, testing: bool = False) -> F
         description="AI recommendation microservice for DLS Exam",
         lifespan=lifespan,
     )
+    if not testing:
+        from prometheus_fastapi_instrumentator import Instrumentator
+
+        Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
     app.state.settings = app_settings
     app.state.session_factory = session_factory
     app.include_router(router)
