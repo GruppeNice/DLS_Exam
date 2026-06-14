@@ -11,5 +11,5 @@ INSERT INTO review (id, user_id, movie_id, review_text, spoiler, created_at, upd
     ('b1111111-1111-4111-8111-111111111101', 'dddddddd-dddd-dddd-dddd-ddddddddddd1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', 'Neon Horizon is a standout cyberpunk thriller.', FALSE, CURDATE(), NULL),
     ('b1111111-1111-4111-8111-111111111102', 'dddddddd-dddd-dddd-dddd-ddddddddddd1', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3', 'Slow burn but worth the finale.', TRUE, CURDATE(), NULL);
 
-INSERT INTO review_vote (id, user_id, review_id, value) VALUES
+INSERT INTO review_vote (id, user_id, review_id, vote_value) VALUES
     ('c1111111-1111-4111-8111-111111111101', 'dddddddd-dddd-dddd-dddd-ddddddddddd2', 'b1111111-1111-4111-8111-111111111101', 1);

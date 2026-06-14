@@ -2,10 +2,12 @@ package com.ratingandreviewservice.service;
 
 import com.ratingandreviewservice.dto.ReviewVotesRequest;
 import com.ratingandreviewservice.dto.ReviewVotesResponse;
+import com.ratingandreviewservice.messaging.ReviewEventPublisher;
 import com.ratingandreviewservice.model.Review;
 import com.ratingandreviewservice.model.ReviewVote;
 import com.ratingandreviewservice.repository.ReviewRepository;
 import com.ratingandreviewservice.repository.ReviewVotesRepository;
+import java.time.Instant;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,10 +20,16 @@ public class ReviewVotesService {
 
     private final ReviewVotesRepository reviewVotesRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewEventPublisher eventPublisher;
 
-    public ReviewVotesService(ReviewVotesRepository reviewVotesRepository, ReviewRepository reviewRepository) {
+    public ReviewVotesService(
+        ReviewVotesRepository reviewVotesRepository,
+        ReviewRepository reviewRepository,
+        ReviewEventPublisher eventPublisher
+    ) {
         this.reviewVotesRepository = reviewVotesRepository;
         this.reviewRepository = reviewRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public void addReviewVote(ReviewVotesRequest reviewVotesRequest){
@@ -30,7 +38,18 @@ public class ReviewVotesService {
         }
         ReviewVote newReviewVote = fromDTO(reviewVotesRequest);
         newReviewVote.setId(UUID.randomUUID());
-        reviewVotesRepository.save(newReviewVote);
+        ReviewVote savedReviewVote = reviewVotesRepository.save(newReviewVote);
+
+        try {
+            eventPublisher.reviewVoted(
+                savedReviewVote.getReview().getId(),
+                savedReviewVote.getUserId(),
+                savedReviewVote.getValue(),
+                Instant.now()
+            );
+        } catch (RuntimeException ignored) {
+            // Vote is persisted; event delivery is best-effort for the demo UI.
+        }
     }
 
     public List<ReviewVotesResponse> getReviewVotesByReviewId(UUID reviewId){
@@ -53,6 +72,7 @@ public class ReviewVotesService {
         ReviewVote reviewVote = new ReviewVote();
         reviewVote.setReview(review);
         reviewVote.setUserId(reviewVotesRequest.userId());
+        reviewVote.setValue(reviewVotesRequest.value());
         return reviewVote;
     }
 }

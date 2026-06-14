@@ -23,7 +23,7 @@ CREATE TABLE review_vote (
     id CHAR(36) PRIMARY KEY,
     user_id CHAR(36) NOT NULL,
     review_id CHAR(36) NOT NULL,
-    value INT NOT NULL,
+    vote_value INT NOT NULL,
     CONSTRAINT uk_review_vote_review_user UNIQUE (review_id, user_id),
     CONSTRAINT fk_review_vote_review FOREIGN KEY (review_id) REFERENCES review (id) ON DELETE CASCADE
 );

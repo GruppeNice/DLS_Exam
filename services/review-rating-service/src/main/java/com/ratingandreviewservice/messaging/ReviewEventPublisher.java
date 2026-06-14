@@ -42,6 +42,10 @@ public class ReviewEventPublisher {
         ));
     }
 
+    public void reviewVoted(UUID reviewId, UUID userId, int value, Instant occurredAt) {
+        publish("review.voted", new ReviewVotedEvent(reviewId, userId, value, occurredAt.toString()));
+    }
+
     private void publish(String routingKey, Object event) {
         rabbitTemplate.convertAndSend(exchange, routingKey, event);
     }
@@ -61,6 +65,14 @@ public class ReviewEventPublisher {
         UUID contentId,
         String reviewText,
         boolean spoiler,
+        String occurredAt
+    ) {
+    }
+
+    public record ReviewVotedEvent(
+        UUID reviewId,
+        UUID userId,
+        int value,
         String occurredAt
     ) {
     }

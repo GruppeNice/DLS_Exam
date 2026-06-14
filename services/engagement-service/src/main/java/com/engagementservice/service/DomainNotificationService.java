@@ -103,6 +103,30 @@ public class DomainNotificationService {
         notificationService.queueNotification(request);
     }
 
+    public void handleReviewVoted(Map<String, Object> payload) {
+        UUID userId = parseUuid(payload.get("userId"));
+        UUID reviewId = parseUuid(payload.get("reviewId"));
+        if (userId == null || reviewId == null) {
+            return;
+        }
+
+        int value = Integer.parseInt(String.valueOf(payload.getOrDefault("value", 0)));
+        String voteLabel = value > 0 ? "upvote" : "downvote";
+
+        NotificationRequest request = new NotificationRequest();
+        request.setType(NotificationType.EMAIL);
+        request.setRecipient(userEmailResolver.resolve(userId));
+        request.setSubject("Your review vote was recorded");
+        request.setTemplateName("review-published");
+        request.setTemplateVariables(Map.of(
+            "name", userEmailResolver.resolve(userId),
+            "title", "your review " + reviewId,
+            "reviewText", "A " + voteLabel + " was recorded for your review.",
+            "spoiler", "false"
+        ));
+        notificationService.queueNotification(request);
+    }
+
     private UUID parseUuid(Object value) {
         if (value == null) {
             return null;

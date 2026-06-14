@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:engagementtest;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  mail:
+    host: localhost
+    port: 3025
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+notification:
+  mail:
+    from: noreply@dls.local
+
+app:
+  messaging:
+    billing-exchange: billing.events
+    streaming-exchange: streaming.events
+    catalog-exchange: catalog.events
+    review-exchange: review.events
+  engagement:
+    demo-user-id: dddddddd-dddd-dddd-dddd-ddddddddddd1
+    demo-user-email: demo@dls.local
+    broadcast-recipient: demo@dls.local
+

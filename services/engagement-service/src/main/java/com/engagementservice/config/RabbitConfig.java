@@ -7,7 +7,11 @@ import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -68,7 +72,32 @@ public class RabbitConfig {
     }
 
     @Bean
+    Binding reviewVotedBinding(Queue domainEventsQueue, TopicExchange reviewEventsExchange) {
+        return BindingBuilder.bind(domainEventsQueue).to(reviewEventsExchange).with("review.voted");
+    }
+
+    @Bean
+    MessageConverter messageConverter() {
+        return new JacksonJsonMessageConverter();
+    }
+
+    @Bean
+    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter messageConverter) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(messageConverter);
+        return rabbitTemplate;
+    }
+
+    @Bean
     public RabbitAdmin rabbitAdmin(ConnectionFactory connectionFactory) {
-        return new RabbitAdmin(connectionFactory);
+        RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
+        rabbitAdmin.setAutoStartup(true);
+        rabbitAdmin.setIgnoreDeclarationExceptions(true);
+        return rabbitAdmin;
+    }
+
+    @Bean
+    ApplicationRunner rabbitInfrastructureInitializer(RabbitAdmin rabbitAdmin) {
+        return args -> rabbitAdmin.initialize();
     }
 }

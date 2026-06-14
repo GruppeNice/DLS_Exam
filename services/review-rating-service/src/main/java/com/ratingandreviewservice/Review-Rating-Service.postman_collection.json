@@ -1,0 +1,171 @@
+{
+  "info": {
+    "_postman_id": "review-rating-service-collection",
+    "name": "Review Rating Service API",
+    "description": "Postman collection for Review Rating Service API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Get Review By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reviews/550e8400-e29b-41d4-a716-446655440000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "550e8400-e29b-41d4-a716-446655440000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"movieId\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"reviewText\": \"This is a great movie! Highly recommended.\",\n  \"spoiler\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/reviews/add",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "add"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ratings",
+      "item": [
+        {
+          "name": "Get Rating By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ratings/550e8400-e29b-41d4-a716-446655440003",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ratings",
+                "550e8400-e29b-41d4-a716-446655440003"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Rating",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"movieId\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"userRating\": 8\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/ratings/add",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ratings",
+                "add"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Review Votes",
+      "item": [
+        {
+          "name": "Get Review Votes By Review ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/review-votes/550e8400-e29b-41d4-a716-446655440000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "review-votes",
+                "550e8400-e29b-41d4-a716-446655440000"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Review Vote",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"reviewId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"value\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/review-votes/add",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "review-votes",
+                "add"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}
+

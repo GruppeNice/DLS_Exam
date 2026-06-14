@@ -1,10 +1,20 @@
 package com.engagementservice;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.rabbitmq.listener.simple.auto-startup=false",
+        "spring.rabbitmq.listener.direct.auto-startup=false"
+})
+@ActiveProfiles("test")
 class EngagementServiceApplicationTests {
+
+    @MockitoBean
+    RabbitAdmin rabbitAdmin;
 
     @Test
     void contextLoads() {
