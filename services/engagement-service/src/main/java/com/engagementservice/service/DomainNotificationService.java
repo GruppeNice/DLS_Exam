@@ -79,6 +79,30 @@ public class DomainNotificationService {
         notificationService.queueNotification(request);
     }
 
+    public void handleContentReviewed(Map<String, Object> payload) {
+        UUID userId = parseUuid(payload.get("userId"));
+        if (userId == null) {
+            return;
+        }
+
+        String reviewText = String.valueOf(payload.getOrDefault("reviewText", ""));
+        boolean spoiler = Boolean.parseBoolean(String.valueOf(payload.getOrDefault("spoiler", false)));
+        String title = String.valueOf(payload.getOrDefault("title", "your pick"));
+
+        NotificationRequest request = new NotificationRequest();
+        request.setType(NotificationType.EMAIL);
+        request.setRecipient(userEmailResolver.resolve(userId));
+        request.setSubject("Your review is live on DLS");
+        request.setTemplateName("review-published");
+        request.setTemplateVariables(Map.of(
+            "name", userEmailResolver.resolve(userId),
+            "title", title,
+            "reviewText", reviewText,
+            "spoiler", spoiler ? "true" : "false"
+        ));
+        notificationService.queueNotification(request);
+    }
+
     private UUID parseUuid(Object value) {
         if (value == null) {
             return null;

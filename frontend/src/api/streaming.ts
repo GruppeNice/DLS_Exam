@@ -10,6 +10,15 @@ export async function getMySessions(
   });
 }
 
+export async function getLatestSessionForContent(
+  token: string,
+  contentId: string,
+): Promise<ApiResult<PlaybackSession>> {
+  return request(`${API.streaming}/api/v1/playback/sessions/content/${contentId}`, {
+    headers: authHeaders(token),
+  });
+}
+
 export async function startPlayback(
   token: string,
   contentId: string,
@@ -24,13 +33,27 @@ export async function startPlayback(
   });
 }
 
-export async function stopPlayback(
+export async function resumePlayback(
   token: string,
   sessionId: string,
 ): Promise<ApiResult<PlaybackSession>> {
-  return request(`${API.streaming}/api/v1/playback/sessions/${sessionId}/stop`, {
+  return request(`${API.streaming}/api/v1/playback/sessions/${sessionId}/resume`, {
     method: "POST",
     headers: authHeaders(token),
+  });
+}
+
+export async function stopPlayback(
+  token: string,
+  sessionId: string,
+  positionSeconds?: number,
+): Promise<ApiResult<PlaybackSession>> {
+  return request(`${API.streaming}/api/v1/playback/sessions/${sessionId}/stop`, {
+    method: "POST",
+    headers: jsonHeaders(token),
+    body: JSON.stringify(
+      positionSeconds === undefined ? {} : { positionSeconds },
+    ),
   });
 }
 

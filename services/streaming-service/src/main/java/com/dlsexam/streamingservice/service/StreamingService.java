@@ -11,6 +11,7 @@ import com.dlsexam.streamingservice.repository.PlaybackSessionRepository;
 import com.dlsexam.streamingservice.service.DrmValidator.DrmResult;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,12 @@ public class StreamingService {
         return toResponse(findOwnedSession(userId, sessionId));
     }
 
+    public PlaybackSessionResponse getLatestSessionForContent(UUID userId, UUID contentId) {
+        PlaybackSession session = sessionRepository.findFirstByUserIdAndContentIdOrderByUpdatedAtDesc(userId, contentId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No playback session for this content"));
+        return toResponse(session);
+    }
+
     @Transactional
     public PlaybackSessionResponse startPlayback(UUID userId, StartPlaybackRequest request, String idempotencyKey) {
         return sessionRepository.findByIdempotencyKey(idempotencyKey)
@@ -56,14 +63,31 @@ public class StreamingService {
                 }
                 return toResponse(existing);
             })
-            .orElseGet(() -> createPlaybackSession(userId, request.contentId(), idempotencyKey));
+            .orElseGet(() -> {
+                Optional<PlaybackSession> latest = sessionRepository
+                    .findFirstByUserIdAndContentIdOrderByUpdatedAtDesc(userId, request.contentId());
+                if (latest.isPresent()) {
+                    PlaybackSession session = latest.get();
+                    if (session.getStatus() == PlaybackStatus.ACTIVE) {
+                        return toResponse(session);
+                    }
+                    if (session.getStatus() == PlaybackStatus.STOPPED) {
+                        return resumePlayback(userId, session.getId());
+                    }
+                }
+                return createPlaybackSession(userId, request.contentId(), idempotencyKey);
+            });
     }
 
     @Transactional
-    public PlaybackSessionResponse stopPlayback(UUID userId, UUID sessionId) {
+    public PlaybackSessionResponse stopPlayback(UUID userId, UUID sessionId, Long positionSeconds) {
         PlaybackSession session = findOwnedSession(userId, sessionId);
         if (session.getStatus() != PlaybackStatus.ACTIVE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Session is not active");
+        }
+
+        if (positionSeconds != null && positionSeconds >= 0) {
+            session.setPositionSeconds(positionSeconds);
         }
 
         session.setStatus(PlaybackStatus.STOPPED);

@@ -44,6 +44,14 @@ public class PlaybackController {
         return streamingService.getSession(principal.getId(), sessionId);
     }
 
+    @GetMapping("/sessions/content/{contentId}")
+    public PlaybackSessionResponse latestForContent(
+        @AuthenticationPrincipal UserPrincipal principal,
+        @PathVariable UUID contentId
+    ) {
+        return streamingService.getLatestSessionForContent(principal.getId(), contentId);
+    }
+
     @PostMapping("/start")
     @ResponseStatus(HttpStatus.CREATED)
     public PlaybackSessionResponse start(
@@ -57,9 +65,11 @@ public class PlaybackController {
     @PostMapping("/sessions/{sessionId}/stop")
     public PlaybackSessionResponse stop(
         @AuthenticationPrincipal UserPrincipal principal,
-        @PathVariable UUID sessionId
+        @PathVariable UUID sessionId,
+        @RequestBody(required = false) UpdateProgressRequest request
     ) {
-        return streamingService.stopPlayback(principal.getId(), sessionId);
+        Long position = request == null ? null : request.positionSeconds();
+        return streamingService.stopPlayback(principal.getId(), sessionId, position);
     }
 
     @PostMapping("/sessions/{sessionId}/resume")

@@ -24,20 +24,35 @@ public class RatingService {
     }
 
     public void addRating(RatingRequest rating) {
-        Rating newRating = fromDTO(rating);
-        newRating.setId(UUID.randomUUID());
-        newRating.setCreatedAt(LocalDateTime.now());
-        Rating savedRating = ratingRepository.save(newRating);
+        Rating existing = ratingRepository
+            .findByUserIdAndMovieId(rating.userId(), rating.movieId())
+            .orElse(null);
+
+        Rating savedRating;
+        if (existing != null) {
+            existing.setUserRating(rating.userRating());
+            savedRating = ratingRepository.save(existing);
+        } else {
+            Rating newRating = fromDTO(rating);
+            newRating.setId(UUID.randomUUID());
+            newRating.setCreatedAt(LocalDateTime.now());
+            savedRating = ratingRepository.save(newRating);
+        }
+
         if (savedRating.getId() == null) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to save rating");
         }
-        eventPublisher.contentRated(
-            savedRating.getId(),
-            savedRating.getUserId(),
-            savedRating.getMovieId(),
-            savedRating.getUserRating(),
-            Instant.now()
-        );
+        try {
+            eventPublisher.contentRated(
+                savedRating.getId(),
+                savedRating.getUserId(),
+                savedRating.getMovieId(),
+                savedRating.getUserRating(),
+                Instant.now()
+            );
+        } catch (RuntimeException ignored) {
+            // Rating is persisted; event delivery is best-effort for the demo UI.
+        }
     }
 
     public RatingResponse getRatingById(UUID id) {

@@ -2,13 +2,12 @@ import { NavLink, Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
-  { to: "/", label: "Overview", end: true },
-  { to: "/catalog", label: "Catalog" },
-  { to: "/playback", label: "Playback" },
-  { to: "/billing", label: "Billing" },
+  { to: "/catalog", label: "Browse" },
+  { to: "/playback", label: "Watch" },
+  { to: "/billing", label: "My Plan" },
   { to: "/reviews", label: "Reviews" },
-  { to: "/notifications", label: "Notifications" },
-  { to: "/recommendations", label: "Recommendations" },
+  { to: "/recommendations", label: "For You" },
+  { to: "/", label: "Platform", end: true },
 ];
 
 export function AppLayout() {
@@ -22,10 +21,10 @@ export function AppLayout() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="brand-mark">DLS</span>
+          <span className="brand-mark">▶</span>
           <div>
-            <strong>Stream Console</strong>
-            <p>7-service test UI</p>
+            <strong>DLS Stream</strong>
+            <p>Watch · rate · recommend</p>
           </div>
         </div>
 

@@ -43,6 +43,11 @@ public class RabbitConfig {
     }
 
     @Bean
+    TopicExchange reviewEventsExchange(@Value("${app.messaging.review-exchange}") String exchangeName) {
+        return new TopicExchange(exchangeName, true, false);
+    }
+
+    @Bean
     Binding subscriptionActivatedBinding(Queue domainEventsQueue, TopicExchange billingEventsExchange) {
         return BindingBuilder.bind(domainEventsQueue).to(billingEventsExchange).with("subscription.activated");
     }
@@ -55,6 +60,11 @@ public class RabbitConfig {
     @Bean
     Binding contentCreatedBinding(Queue domainEventsQueue, TopicExchange catalogEventsExchange) {
         return BindingBuilder.bind(domainEventsQueue).to(catalogEventsExchange).with("content.created");
+    }
+
+    @Bean
+    Binding contentReviewedBinding(Queue domainEventsQueue, TopicExchange reviewEventsExchange) {
+        return BindingBuilder.bind(domainEventsQueue).to(reviewEventsExchange).with("content.reviewed");
     }
 
     @Bean

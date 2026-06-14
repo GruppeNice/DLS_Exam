@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>Thanks for reviewing on DLS</h1>
+<p>Hi <span th:text="${name}">viewer</span>,</p>
+<p>Your review for <strong th:text="${title}">a title</strong> is live:</p>
+<blockquote th:text="${reviewText}">Review text</blockquote>
+<p th:if="${spoiler} == 'true'" style="color:#b45309;"><em>Marked as containing spoilers.</em></p>
+<p>Keep watching, rating, and reviewing — recommendations and engagement pick up from here.</p>
+</body>
+</html>

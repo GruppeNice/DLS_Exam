@@ -21,11 +21,25 @@ public class ReviewEventPublisher {
     }
 
     public void contentRated(UUID ratingId, UUID userId, UUID contentId, int stars, Instant occurredAt) {
-        publish("content.rated", new ContentRatedEvent(ratingId, userId, contentId, stars, occurredAt));
+        publish("content.rated", new ContentRatedEvent(ratingId, userId, contentId, stars, occurredAt.toString()));
     }
 
-    public void contentReviewed(UUID reviewId, UUID userId, UUID contentId, Instant occurredAt) {
-        publish("content.reviewed", new ContentReviewedEvent(reviewId, userId, contentId, occurredAt));
+    public void contentReviewed(
+        UUID reviewId,
+        UUID userId,
+        UUID contentId,
+        String reviewText,
+        boolean spoiler,
+        Instant occurredAt
+    ) {
+        publish("content.reviewed", new ContentReviewedEvent(
+            reviewId,
+            userId,
+            contentId,
+            reviewText,
+            spoiler,
+            occurredAt.toString()
+        ));
     }
 
     private void publish(String routingKey, Object event) {
@@ -37,7 +51,7 @@ public class ReviewEventPublisher {
         UUID userId,
         UUID contentId,
         int stars,
-        Instant occurredAt
+        String occurredAt
     ) {
     }
 
@@ -45,7 +59,9 @@ public class ReviewEventPublisher {
         UUID reviewId,
         UUID userId,
         UUID contentId,
-        Instant occurredAt
+        String reviewText,
+        boolean spoiler,
+        String occurredAt
     ) {
     }
 }

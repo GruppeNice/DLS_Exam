@@ -69,6 +69,32 @@ export function ResponsePanel<T>({ title = "Response", result, loading }: Respon
   );
 }
 
+interface StreamPageHeaderProps {
+  title: string;
+  description: string;
+}
+
+export function StreamPageHeader({ title, description }: StreamPageHeaderProps) {
+  return (
+    <header className="page-header stream-header">
+      <div>
+        <p className="eyebrow">DLS Stream</p>
+        <h1>{title}</h1>
+        <p className="page-description">{description}</p>
+      </div>
+    </header>
+  );
+}
+
+interface StatusMessageProps {
+  variant: "success" | "error" | "warning";
+  children: ReactNode;
+}
+
+export function StatusMessage({ variant, children }: StatusMessageProps) {
+  return <div className={`status-message status-${variant}`}>{children}</div>;
+}
+
 interface PageHeaderProps {
   title: string;
   description: string;

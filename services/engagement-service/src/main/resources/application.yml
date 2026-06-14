@@ -38,6 +38,7 @@ app:
     billing-exchange: ${BILLING_EVENTS_EXCHANGE:billing.events}
     streaming-exchange: ${STREAMING_EVENTS_EXCHANGE:streaming.events}
     catalog-exchange: ${CATALOG_EVENTS_EXCHANGE:catalog.events}
+    review-exchange: ${REVIEW_EVENTS_EXCHANGE:review.events}
   engagement:
     demo-user-id: ${DEMO_USER_ID:dddddddd-dddd-dddd-dddd-ddddddddddd1}
     demo-user-email: ${DEMO_USER_EMAIL:demo@dls.local}

@@ -13,5 +13,7 @@ public interface PlaybackSessionRepository extends JpaRepository<PlaybackSession
 
     List<PlaybackSession> findByUserIdOrderByUpdatedAtDesc(UUID userId);
 
+    Optional<PlaybackSession> findFirstByUserIdAndContentIdOrderByUpdatedAtDesc(UUID userId, UUID contentId);
+
     Optional<PlaybackSession> findByUserIdAndContentIdAndStatus(UUID userId, UUID contentId, PlaybackStatus status);
 }

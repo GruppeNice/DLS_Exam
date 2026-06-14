@@ -28,12 +28,7 @@ export async function request<T>(
     }
 
     if (!response.ok) {
-      const message =
-        typeof data === "object" && data && "error" in data
-          ? String((data as { error: unknown }).error)
-          : typeof data === "object" && data && "message" in data
-            ? String((data as { message: unknown }).message)
-            : `Request failed (${response.status})`;
+      const message = extractErrorMessage(response.status, data);
       return { ok: false, status: response.status, error: message, data };
     }
 
@@ -60,4 +55,16 @@ export function jsonHeaders(token: string | null): HeadersInit {
 
 export function idempotencyKey(): string {
   return crypto.randomUUID();
+}
+
+function extractErrorMessage(status: number, data: unknown): string {
+  if (typeof data === "object" && data) {
+    if ("error" in data) return String((data as { error: unknown }).error);
+    if ("detail" in data) return String((data as { detail: unknown }).detail);
+    if ("message" in data) return String((data as { message: unknown }).message);
+  }
+  if (status === 401 || (status === 403 && !data)) {
+    return "Your session has expired. Please log out and sign in again.";
+  }
+  return `Request failed (${status})`;
 }

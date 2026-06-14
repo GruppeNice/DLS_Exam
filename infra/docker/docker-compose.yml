@@ -334,6 +334,7 @@ services:
       BILLING_EVENTS_EXCHANGE: billing.events
       STREAMING_EVENTS_EXCHANGE: streaming.events
       CATALOG_EVENTS_EXCHANGE: catalog.events
+      REVIEW_EVENTS_EXCHANGE: review.events
       DEMO_USER_EMAIL: demo@dls.local
       ENGAGEMENT_BROADCAST_EMAIL: demo@dls.local
       SPRING_MAIL_HOST: mailhog

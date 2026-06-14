@@ -2,12 +2,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import type { AuthResponse, UserProfile } from "@/types";
 import * as userApi from "@/api/user";
+import { isJwtExpired } from "@/lib/jwt";
 
 const STORAGE_KEY = "dls_auth";
 
@@ -42,8 +44,14 @@ function loadStored(): StoredAuth | null {
   }
 }
 
+function sanitizeStored(stored: StoredAuth | null): StoredAuth | null {
+  if (!stored?.token || isJwtExpired(stored.token)) return null;
+  return stored;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const stored = loadStored();
+  const rawStored = loadStored();
+  const stored = sanitizeStored(rawStored);
   const [token, setToken] = useState<string | null>(stored?.token ?? null);
   const [user, setUser] = useState<UserProfile | null>(stored?.user ?? null);
 
@@ -54,6 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    if (rawStored && !stored) {
+      persist(null);
+    }
+  }, [rawStored, stored, persist]);
 
   const applyAuth = useCallback(
     (auth: AuthResponse) => {
@@ -96,12 +110,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = useCallback(async () => {
     if (!token) return;
+    if (isJwtExpired(token)) {
+      logout();
+      return;
+    }
     const result = await userApi.getMe(token);
     if (result.ok && result.data) {
       setUser(result.data);
       persist({ token, user: result.data });
+    } else if (result.status === 401 || result.status === 403) {
+      logout();
     }
-  }, [token, persist]);
+  }, [token, persist, logout]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (isJwtExpired(token)) {
+      logout();
+      return;
+    }
+    void refreshProfile();
+  }, [token, logout, refreshProfile]);
 
   const value = useMemo(
     () => ({

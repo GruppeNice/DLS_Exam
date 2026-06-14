@@ -8,6 +8,8 @@ export interface Review {
   movieId: string;
   reviewText: string;
   spoiler: boolean;
+  createdAt?: string;
+  userRating?: number | null;
 }
 
 export interface Rating {
@@ -21,12 +23,13 @@ export async function addReview(
   userId: string,
   movieId: string,
   reviewText: string,
+  userRating: number,
   spoiler = false,
 ): Promise<ApiResult<unknown>> {
   return request(`${API.review}/reviews/add`, {
     method: "POST",
     headers: jsonHeaders(null),
-    body: JSON.stringify({ userId, movieId, reviewText, spoiler }),
+    body: JSON.stringify({ userId, movieId, reviewText, userRating, spoiler }),
   });
 }
 
@@ -40,6 +43,10 @@ export async function addRating(
     headers: jsonHeaders(null),
     body: JSON.stringify({ userId, movieId, userRating }),
   });
+}
+
+export async function getReviewsByMovie(movieId: string): Promise<ApiResult<Review[]>> {
+  return request(`${API.review}/reviews/movie/${movieId}`);
 }
 
 export async function getReview(reviewId: string): Promise<ApiResult<Review>> {

@@ -8,7 +8,7 @@ import * as billingApi from "@/api/billing";
 import * as reviewApi from "@/api/review";
 import * as engagementApi from "@/api/engagement";
 import * as recommendationApi from "@/api/recommendation";
-import { ActionButton, PageHeader, StatusDot } from "@/components/ui";
+import { ActionButton, StatusDot, StreamPageHeader } from "@/components/ui";
 import { SEED_CONTENT_IDS, SEED_PLAN_IDS } from "@/types";
 
 const SERVICES = [
@@ -20,6 +20,14 @@ const SERVICES = [
   { key: "engagement", label: "Engagement", port: 8086, check: engagementApi.checkHealth },
   { key: "recommendation", label: "Recommendation", port: 8090, check: recommendationApi.checkHealth },
 ] as const;
+
+const JOURNEY = [
+  { step: "1", title: "Browse", path: "/catalog", detail: "Catalog GraphQL + seeds" },
+  { step: "2", title: "Subscribe", path: "/billing", detail: "Billing + RabbitMQ events" },
+  { step: "3", title: "Watch", path: "/playback", detail: "Streaming sessions + DRM sim" },
+  { step: "4", title: "Review", path: "/reviews", detail: "Ratings → content.rated" },
+  { step: "5", title: "For You", path: "/recommendations", detail: "ML ingest + rank" },
+];
 
 export function OverviewPage() {
   const { user, token } = useAuth();
@@ -65,11 +73,8 @@ export function OverviewPage() {
       log.push("✓ Playback stopped");
     }
 
-    await reviewApi.addRating(user.id, contentId, 5);
-    log.push("✓ Rating submitted (review service)");
-
-    await reviewApi.addReview(user.id, contentId, "Loved it — great test run!", false);
-    log.push("✓ Review submitted");
+    await reviewApi.addReview(user.id, contentId, "Loved it — great test run!", 5, false);
+    log.push("✓ Review and rating submitted (review service)");
 
     await recommendationApi.ingestInteraction(user.id, contentId);
     log.push("✓ Interaction ingested (recommendation service)");
@@ -93,12 +98,19 @@ export function OverviewPage() {
 
   return (
     <div className="page">
-      <PageHeader
-        title="Service overview"
-        description="Health checks and a guided flow across user → billing → streaming → review → engagement → recommendation."
-        service="Platform"
-        port={3000}
+      <StreamPageHeader
+        title="Platform"
+        description="Service health and the end-to-end demo flow behind the streaming UI — user → billing → streaming → review → engagement → recommendation."
       />
+
+      <section className="journey-banner">
+        {JOURNEY.map((node) => (
+          <Link key={node.step} to={node.path} className="journey-node">
+            <strong>{node.step}. {node.title}</strong>
+            <span>{node.detail}</span>
+          </Link>
+        ))}
+      </section>
 
       <section className="card-grid">
         {SERVICES.map((s) => (
@@ -145,14 +157,9 @@ export function OverviewPage() {
       </div>
 
       <section className="panel">
-        <h2>Quick links</h2>
+        <h2>Developer tools</h2>
         <div className="link-row">
-          <Link to="/catalog">Browse catalog</Link>
-          <Link to="/playback">Playback sessions</Link>
-          <Link to="/billing">Plans & subscriptions</Link>
-          <Link to="/reviews">Reviews & ratings</Link>
-          <Link to="/notifications">Send notification</Link>
-          <Link to="/recommendations">Recommendations</Link>
+          <Link to="/notifications">Notifications</Link>
           <a href="http://localhost:8025" target="_blank" rel="noreferrer">MailHog UI</a>
           <a href="http://localhost:15672" target="_blank" rel="noreferrer">RabbitMQ UI</a>
         </div>

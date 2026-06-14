@@ -32,6 +32,7 @@ public class DomainEventListener {
                 case "subscription.activated" -> domainNotificationService.handleSubscriptionActivated(payload);
                 case "playback.stopped" -> domainNotificationService.handlePlaybackStopped(payload);
                 case "content.created" -> domainNotificationService.handleContentCreated(payload);
+                case "content.reviewed" -> domainNotificationService.handleContentReviewed(payload);
                 default -> logger.debug("Ignoring unsupported domain event: {}", routingKey);
             }
         } catch (Exception exception) {
