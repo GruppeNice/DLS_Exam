@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: DLS Platform
+    orgId: 1
+    folder: DLS
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

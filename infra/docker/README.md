@@ -50,6 +50,24 @@ docker build -f infra/docker/Dockerfile.spring-service \
 | rabbitmq (management UI) | 15672 |
 | mailhog (web UI) | 8025 |
 
+## Observability (optional overlay)
+
+```bash
+docker compose \
+  -f infra/docker/docker-compose.yml \
+  -f infra/observability/docker-compose.yml \
+  up -d
+```
+
+| Tool | Port |
+|------|------|
+| Grafana | 3001 (`admin` / `admin`) |
+| Prometheus | 9090 |
+| Zipkin | 9411 |
+| Loki | 3100 |
+
+See `infra/observability/README.md`.
+
 | MySQL database | Host port |
 |----------------|-----------|
 | user_db | 3306 |
@@ -61,3 +79,18 @@ docker build -f infra/docker/Dockerfile.spring-service \
 | engagement_db | 3312 |
 
 Per-service `docker-compose.yml` files include this shared compose file for convenience.
+
+## Troubleshooting
+
+### `UnknownHostException: user-service-db` (or other `*-db` host)
+
+Usually means containers are on **different Docker networks** — often after the platform network was renamed to `dls-platform` while old DB/RabbitMQ containers were still running on `docker_default`.
+
+**Fix:** recreate the full stack so every container joins the same network:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml down
+docker compose -f infra/docker/docker-compose.yml up --build
+```
+
+Verify with `docker ps` — all `dls-*` and `*-service*` containers should list `dls-platform` under NETWORKS.

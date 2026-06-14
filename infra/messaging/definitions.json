@@ -1,0 +1,29 @@
+{
+  "rabbit_version": "3.13.0",
+  "exchanges": [
+    { "name": "user.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "billing.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "streaming.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "catalog.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} },
+    { "name": "review.events", "vhost": "/", "type": "topic", "durable": true, "auto_delete": false, "internal": false, "arguments": {} }
+  ],
+  "queues": [
+    { "name": "catalog-service.review-events", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "engagement-service.domain-events", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "notification-queue", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} },
+    { "name": "recommendation-service.events", "vhost": "/", "durable": true, "auto_delete": false, "arguments": {} }
+  ],
+  "bindings": [
+    { "source": "review.events", "vhost": "/", "destination": "catalog-service.review-events", "destination_type": "queue", "routing_key": "content.rated", "arguments": {} },
+    { "source": "review.events", "vhost": "/", "destination": "catalog-service.review-events", "destination_type": "queue", "routing_key": "content.reviewed", "arguments": {} },
+    { "source": "billing.events", "vhost": "/", "destination": "engagement-service.domain-events", "destination_type": "queue", "routing_key": "subscription.activated", "arguments": {} },
+    { "source": "streaming.events", "vhost": "/", "destination": "engagement-service.domain-events", "destination_type": "queue", "routing_key": "playback.stopped", "arguments": {} },
+    { "source": "catalog.events", "vhost": "/", "destination": "engagement-service.domain-events", "destination_type": "queue", "routing_key": "content.created", "arguments": {} },
+    { "source": "review.events", "vhost": "/", "destination": "engagement-service.domain-events", "destination_type": "queue", "routing_key": "content.reviewed", "arguments": {} },
+    { "source": "streaming.events", "vhost": "/", "destination": "recommendation-service.events", "destination_type": "queue", "routing_key": "playback.started", "arguments": {} },
+    { "source": "streaming.events", "vhost": "/", "destination": "recommendation-service.events", "destination_type": "queue", "routing_key": "playback.progress.updated", "arguments": {} },
+    { "source": "streaming.events", "vhost": "/", "destination": "recommendation-service.events", "destination_type": "queue", "routing_key": "playback.stopped", "arguments": {} },
+    { "source": "billing.events", "vhost": "/", "destination": "recommendation-service.events", "destination_type": "queue", "routing_key": "subscription.activated", "arguments": {} },
+    { "source": "review.events", "vhost": "/", "destination": "recommendation-service.events", "destination_type": "queue", "routing_key": "content.rated", "arguments": {} }
+  ]
+}

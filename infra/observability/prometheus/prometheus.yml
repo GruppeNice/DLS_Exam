@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: user-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["user-service:8081"]
+        labels:
+          service: user-service
+
+  - job_name: catalog-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["catalog-service:8082"]
+        labels:
+          service: catalog-service
+
+  - job_name: streaming-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["streaming-service:8083"]
+        labels:
+          service: streaming-service
+
+  - job_name: billing-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["billing-service:8084"]
+        labels:
+          service: billing-service
+
+  - job_name: review-rating-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["review-rating-service:8085"]
+        labels:
+          service: review-rating-service
+
+  - job_name: engagement-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["engagement-service:8086"]
+        labels:
+          service: engagement-service
+
+  - job_name: recommendation-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["recommendation-service:8090"]
+        labels:
+          service: recommendation-service
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

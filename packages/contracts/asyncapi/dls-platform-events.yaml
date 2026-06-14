@@ -1,0 +1,326 @@
+asyncapi: 2.6.0
+info:
+  title: DLS Platform Events
+  version: 1.0.0
+  description: |
+    Consolidated RabbitMQ event contract for the DLS streaming platform.
+    Topology and bindings: infra/messaging/TOPOLOGY.md
+    JSON Schemas: packages/contracts/schemas/events.json
+  contact:
+    name: DLS Exam Team
+
+defaultContentType: application/json
+
+servers:
+  local:
+    url: amqp://localhost:5672
+    protocol: amqp
+    description: Local Docker Compose broker
+
+channels:
+  user.events/user.registered:
+    publish:
+      operationId: publishUserRegistered
+      summary: User completed registration
+      message:
+        $ref: "#/components/messages/UserRegistered"
+
+  user.events/user.suspended:
+    publish:
+      operationId: publishUserSuspended
+      message:
+        $ref: "#/components/messages/UserSuspended"
+
+  user.events/user.deleted:
+    publish:
+      operationId: publishUserDeleted
+      message:
+        $ref: "#/components/messages/UserDeleted"
+
+  billing.events/subscription.activated:
+    publish:
+      operationId: publishSubscriptionActivated
+      message:
+        $ref: "#/components/messages/SubscriptionActivated"
+    subscribe:
+      operationId: consumeSubscriptionActivated
+      message:
+        $ref: "#/components/messages/SubscriptionActivated"
+
+  billing.events/subscription.cancelled:
+    publish:
+      operationId: publishSubscriptionCancelled
+      message:
+        $ref: "#/components/messages/SubscriptionCancelled"
+
+  billing.events/payment.succeeded:
+    publish:
+      operationId: publishPaymentSucceeded
+      message:
+        $ref: "#/components/messages/PaymentSucceeded"
+
+  billing.events/payment.failed:
+    publish:
+      operationId: publishPaymentFailed
+      message:
+        $ref: "#/components/messages/PaymentFailed"
+
+  streaming.events/playback.started:
+    publish:
+      operationId: publishPlaybackStarted
+      message:
+        $ref: "#/components/messages/PlaybackStarted"
+    subscribe:
+      operationId: consumePlaybackStarted
+      message:
+        $ref: "#/components/messages/PlaybackStarted"
+
+  streaming.events/playback.stopped:
+    publish:
+      operationId: publishPlaybackStopped
+      message:
+        $ref: "#/components/messages/PlaybackStopped"
+    subscribe:
+      operationId: consumePlaybackStopped
+      message:
+        $ref: "#/components/messages/PlaybackStopped"
+
+  streaming.events/playback.progress.updated:
+    publish:
+      operationId: publishPlaybackProgressUpdated
+      message:
+        $ref: "#/components/messages/PlaybackProgressUpdated"
+    subscribe:
+      operationId: consumePlaybackProgressUpdated
+      message:
+        $ref: "#/components/messages/PlaybackProgressUpdated"
+
+  catalog.events/content.created:
+    publish:
+      operationId: publishContentCreated
+      message:
+        $ref: "#/components/messages/ContentCreated"
+    subscribe:
+      operationId: consumeContentCreated
+      message:
+        $ref: "#/components/messages/ContentCreated"
+
+  catalog.events/content.updated:
+    publish:
+      operationId: publishContentUpdated
+      message:
+        $ref: "#/components/messages/ContentUpdated"
+
+  catalog.events/content.removed:
+    publish:
+      operationId: publishContentRemoved
+      message:
+        $ref: "#/components/messages/ContentRemoved"
+
+  review.events/content.rated:
+    publish:
+      operationId: publishContentRated
+      message:
+        $ref: "#/components/messages/ContentRated"
+    subscribe:
+      operationId: consumeContentRated
+      message:
+        $ref: "#/components/messages/ContentRated"
+
+  review.events/content.reviewed:
+    publish:
+      operationId: publishContentReviewed
+      message:
+        $ref: "#/components/messages/ContentReviewed"
+    subscribe:
+      operationId: consumeContentReviewed
+      message:
+        $ref: "#/components/messages/ContentReviewed"
+
+components:
+  messages:
+    UserRegistered:
+      name: UserRegistered
+      title: User Registered
+      payload:
+        $ref: "#/components/schemas/UserRegistered"
+    UserSuspended:
+      name: UserSuspended
+      payload:
+        $ref: "#/components/schemas/UserSuspended"
+    UserDeleted:
+      name: UserDeleted
+      payload:
+        $ref: "#/components/schemas/UserDeleted"
+    SubscriptionActivated:
+      name: SubscriptionActivated
+      payload:
+        $ref: "#/components/schemas/SubscriptionActivated"
+    SubscriptionCancelled:
+      name: SubscriptionCancelled
+      payload:
+        $ref: "#/components/schemas/SubscriptionCancelled"
+    PaymentSucceeded:
+      name: PaymentSucceeded
+      payload:
+        $ref: "#/components/schemas/PaymentSucceeded"
+    PaymentFailed:
+      name: PaymentFailed
+      payload:
+        $ref: "#/components/schemas/PaymentFailed"
+    PlaybackStarted:
+      name: PlaybackStarted
+      payload:
+        $ref: "#/components/schemas/PlaybackStarted"
+    PlaybackStopped:
+      name: PlaybackStopped
+      payload:
+        $ref: "#/components/schemas/PlaybackStopped"
+    PlaybackProgressUpdated:
+      name: PlaybackProgressUpdated
+      payload:
+        $ref: "#/components/schemas/PlaybackProgressUpdated"
+    ContentCreated:
+      name: ContentCreated
+      payload:
+        $ref: "#/components/schemas/ContentCreated"
+    ContentUpdated:
+      name: ContentUpdated
+      payload:
+        $ref: "#/components/schemas/ContentUpdated"
+    ContentRemoved:
+      name: ContentRemoved
+      payload:
+        $ref: "#/components/schemas/ContentRemoved"
+    ContentRated:
+      name: ContentRated
+      payload:
+        $ref: "#/components/schemas/ContentRated"
+    ContentReviewed:
+      name: ContentReviewed
+      payload:
+        $ref: "#/components/schemas/ContentReviewed"
+
+  schemas:
+    uuid:
+      type: string
+      format: uuid
+    instant:
+      type: string
+      format: date-time
+    UserRegistered:
+      type: object
+      required: [userId, email, occurredAt]
+      properties:
+        userId: { $ref: "#/components/schemas/uuid" }
+        email: { type: string, format: email }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    UserSuspended:
+      type: object
+      required: [userId, email, reason, occurredAt]
+      properties:
+        userId: { $ref: "#/components/schemas/uuid" }
+        email: { type: string }
+        reason: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    UserDeleted:
+      type: object
+      required: [userId, email, occurredAt]
+      properties:
+        userId: { $ref: "#/components/schemas/uuid" }
+        email: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    SubscriptionActivated:
+      type: object
+      required: [subscriptionId, userId, planId, planCode, occurredAt]
+      properties:
+        subscriptionId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        planId: { $ref: "#/components/schemas/uuid" }
+        planCode: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    SubscriptionCancelled:
+      type: object
+      required: [subscriptionId, userId, planId, reason, occurredAt]
+      properties:
+        subscriptionId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        planId: { $ref: "#/components/schemas/uuid" }
+        reason: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    PaymentSucceeded:
+      type: object
+      required: [paymentId, userId, amountCents, currency, occurredAt]
+      properties:
+        paymentId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        amountCents: { type: integer }
+        currency: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    PaymentFailed:
+      type: object
+      required: [paymentId, userId, reason, occurredAt]
+      properties:
+        paymentId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        reason: { type: string }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    PlaybackStarted:
+      type: object
+      required: [sessionId, userId, contentId, positionSeconds, occurredAt]
+      properties:
+        sessionId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        contentId: { $ref: "#/components/schemas/uuid" }
+        positionSeconds: { type: integer, minimum: 0 }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    PlaybackStopped:
+      type: object
+      required: [sessionId, userId, contentId, positionSeconds, occurredAt]
+      properties:
+        sessionId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        contentId: { $ref: "#/components/schemas/uuid" }
+        positionSeconds: { type: integer, minimum: 0 }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    PlaybackProgressUpdated:
+      type: object
+      required: [sessionId, userId, contentId, positionSeconds, occurredAt]
+      properties:
+        sessionId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        contentId: { $ref: "#/components/schemas/uuid" }
+        positionSeconds: { type: integer, minimum: 0 }
+        occurredAt: { $ref: "#/components/schemas/instant" }
+    ContentCreated:
+      type: object
+      properties:
+        contentId: { $ref: "#/components/schemas/uuid" }
+        title: { type: string }
+    ContentUpdated:
+      type: object
+      properties:
+        contentId: { $ref: "#/components/schemas/uuid" }
+    ContentRemoved:
+      type: object
+      properties:
+        contentId: { $ref: "#/components/schemas/uuid" }
+    ContentRated:
+      type: object
+      required: [ratingId, userId, contentId, stars, occurredAt]
+      properties:
+        ratingId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        contentId: { $ref: "#/components/schemas/uuid" }
+        stars: { type: integer, minimum: 1, maximum: 5 }
+        occurredAt: { type: string }
+    ContentReviewed:
+      type: object
+      required: [reviewId, userId, contentId, reviewText, spoiler, occurredAt]
+      properties:
+        reviewId: { $ref: "#/components/schemas/uuid" }
+        userId: { $ref: "#/components/schemas/uuid" }
+        contentId: { $ref: "#/components/schemas/uuid" }
+        reviewText: { type: string }
+        spoiler: { type: boolean }
+        occurredAt: { type: string }

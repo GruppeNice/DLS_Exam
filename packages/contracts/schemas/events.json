@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dls.local/contracts/schemas/events.json",
+  "title": "DLS Platform Domain Events",
+  "type": "object",
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "instant": { "type": "string", "format": "date-time" },
+    "UserRegistered": {
+      "type": "object",
+      "required": ["userId", "email", "occurredAt"],
+      "properties": {
+        "userId": { "$ref": "#/$defs/uuid" },
+        "email": { "type": "string", "format": "email" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "UserSuspended": {
+      "type": "object",
+      "required": ["userId", "email", "reason", "occurredAt"],
+      "properties": {
+        "userId": { "$ref": "#/$defs/uuid" },
+        "email": { "type": "string", "format": "email" },
+        "reason": { "type": "string" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "UserDeleted": {
+      "type": "object",
+      "required": ["userId", "email", "occurredAt"],
+      "properties": {
+        "userId": { "$ref": "#/$defs/uuid" },
+        "email": { "type": "string", "format": "email" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "SubscriptionActivated": {
+      "type": "object",
+      "required": ["subscriptionId", "userId", "planId", "planCode", "occurredAt"],
+      "properties": {
+        "subscriptionId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "planId": { "$ref": "#/$defs/uuid" },
+        "planCode": { "type": "string" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "SubscriptionCancelled": {
+      "type": "object",
+      "required": ["subscriptionId", "userId", "planId", "reason", "occurredAt"],
+      "properties": {
+        "subscriptionId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "planId": { "$ref": "#/$defs/uuid" },
+        "reason": { "type": "string" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "PaymentSucceeded": {
+      "type": "object",
+      "required": ["paymentId", "userId", "amountCents", "currency", "occurredAt"],
+      "properties": {
+        "paymentId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "amountCents": { "type": "integer" },
+        "currency": { "type": "string" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "PaymentFailed": {
+      "type": "object",
+      "required": ["paymentId", "userId", "reason", "occurredAt"],
+      "properties": {
+        "paymentId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "reason": { "type": "string" },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "PlaybackStarted": {
+      "type": "object",
+      "required": ["sessionId", "userId", "contentId", "positionSeconds", "occurredAt"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "contentId": { "$ref": "#/$defs/uuid" },
+        "positionSeconds": { "type": "integer", "minimum": 0 },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "PlaybackStopped": {
+      "type": "object",
+      "required": ["sessionId", "userId", "contentId", "positionSeconds", "occurredAt"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "contentId": { "$ref": "#/$defs/uuid" },
+        "positionSeconds": { "type": "integer", "minimum": 0 },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "PlaybackProgressUpdated": {
+      "type": "object",
+      "required": ["sessionId", "userId", "contentId", "positionSeconds", "occurredAt"],
+      "properties": {
+        "sessionId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "contentId": { "$ref": "#/$defs/uuid" },
+        "positionSeconds": { "type": "integer", "minimum": 0 },
+        "occurredAt": { "$ref": "#/$defs/instant" }
+      }
+    },
+    "ContentRated": {
+      "type": "object",
+      "required": ["ratingId", "userId", "contentId", "stars", "occurredAt"],
+      "properties": {
+        "ratingId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "contentId": { "$ref": "#/$defs/uuid" },
+        "stars": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "occurredAt": { "type": "string" }
+      }
+    },
+    "ContentReviewed": {
+      "type": "object",
+      "required": ["reviewId", "userId", "contentId", "reviewText", "spoiler", "occurredAt"],
+      "properties": {
+        "reviewId": { "$ref": "#/$defs/uuid" },
+        "userId": { "$ref": "#/$defs/uuid" },
+        "contentId": { "$ref": "#/$defs/uuid" },
+        "reviewText": { "type": "string" },
+        "spoiler": { "type": "boolean" },
+        "occurredAt": { "type": "string" }
+      }
+    }
+  }
+}

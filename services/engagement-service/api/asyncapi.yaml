@@ -1,0 +1,25 @@
+asyncapi: 2.6.0
+info:
+  title: Engagement Service Events
+  version: 1.0.0
+  description: |
+    Slice of the platform contract. Canonical spec:
+    packages/contracts/asyncapi/dls-platform-events.yaml
+defaultContentType: application/json
+channels:
+  billing.events/subscription.activated:
+    subscribe:
+      message:
+        name: SubscriptionActivated
+  streaming.events/playback.stopped:
+    subscribe:
+      message:
+        name: PlaybackStopped
+  catalog.events/content.created:
+    subscribe:
+      message:
+        name: ContentCreated
+  review.events/content.reviewed:
+    subscribe:
+      message:
+        name: ContentReviewed
