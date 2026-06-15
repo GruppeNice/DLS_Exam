@@ -1,6 +1,9 @@
 package com.dlsexam.userservice.config;
 
 import com.dlsexam.userservice.security.JwtAuthenticationFilter;
+import com.dlsexam.userservice.security.OAuth2LoginFailureHandler;
+import com.dlsexam.userservice.security.OAuth2LoginSuccessHandler;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -23,25 +26,55 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
+    private final GoogleOAuthProperties googleOAuth;
+    private final ObjectProvider<OAuth2LoginSuccessHandler> oauthSuccessHandler;
+    private final ObjectProvider<OAuth2LoginFailureHandler> oauthFailureHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, UserDetailsService userDetailsService) {
+    public SecurityConfig(
+        JwtAuthenticationFilter jwtAuthenticationFilter,
+        UserDetailsService userDetailsService,
+        GoogleOAuthProperties googleOAuth,
+        ObjectProvider<OAuth2LoginSuccessHandler> oauthSuccessHandler,
+        ObjectProvider<OAuth2LoginFailureHandler> oauthFailureHandler
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.userDetailsService = userDetailsService;
+        this.googleOAuth = googleOAuth;
+        this.oauthSuccessHandler = oauthSuccessHandler;
+        this.oauthFailureHandler = oauthFailureHandler;
     }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
+        SessionCreationPolicy sessionPolicy = googleOAuth.enabled()
+            ? SessionCreationPolicy.IF_REQUIRED
+            : SessionCreationPolicy.STATELESS;
+
+        http
             .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(session -> session.sessionCreationPolicy(sessionPolicy))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/prometheus", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/oauth/**").permitAll()
+                .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .build();
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        if (googleOAuth.enabled()) {
+            OAuth2LoginSuccessHandler successHandler = oauthSuccessHandler.getIfAvailable();
+            OAuth2LoginFailureHandler failureHandler = oauthFailureHandler.getIfAvailable();
+            if (successHandler != null && failureHandler != null) {
+                http.oauth2Login(oauth -> oauth
+                    .successHandler(successHandler)
+                    .failureHandler(failureHandler)
+                );
+            }
+        }
+
+        return http.build();
     }
 
     @Bean

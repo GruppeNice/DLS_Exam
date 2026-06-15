@@ -4,6 +4,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.engagementservice.dto.NotificationRequest;
 import com.engagementservice.service.NotificationService;
@@ -25,12 +26,6 @@ import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * Integration test: verifies the full AMQP flow from a published "review.voted" message to
- * DomainEventListener routing it through DomainNotificationService and ultimately calling
- * NotificationService.queueNotification(). Uses a real RabbitMQ container — only
- * NotificationService is mocked to avoid DB/mail side-effects.
- */
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
@@ -45,7 +40,6 @@ class ReviewVoteListenerIT {
         registry.add("spring.rabbitmq.port", rabbitMQ::getAmqpPort);
     }
 
-    /** Mock only the final sink — listener, routing, and domain service logic are all real. */
     @MockitoBean
     private NotificationService notificationService;
 
@@ -60,13 +54,15 @@ class ReviewVoteListenerIT {
 
     @Test
     void upvoteMessageRoutedThroughListenerTriggersNotification() {
-        UUID userId = UUID.randomUUID();
-        UUID reviewId = UUID.randomUUID();
+        UUID voterUserId = UUID.randomUUID();
+        UUID reviewAuthorId = UUID.randomUUID();
 
         rabbitTemplate.convertAndSend("review.events", "review.voted", Map.of(
-            "reviewId", reviewId.toString(),
-            "userId", userId.toString(),
+            "reviewId", UUID.randomUUID().toString(),
+            "userId", voterUserId.toString(),
+            "reviewAuthorId", reviewAuthorId.toString(),
             "value", 1,
+            "reviewText", "Great movie",
             "occurredAt", Instant.now().toString()
         ));
 
@@ -77,33 +73,29 @@ class ReviewVoteListenerIT {
     }
 
     @Test
-    void downvoteMessageRoutedThroughListenerTriggersNotification() {
-        UUID userId = UUID.randomUUID();
-        UUID reviewId = UUID.randomUUID();
-
+    void downvoteMessageDoesNotTriggerNotification() {
         rabbitTemplate.convertAndSend("review.events", "review.voted", Map.of(
-            "reviewId", reviewId.toString(),
-            "userId", userId.toString(),
+            "reviewId", UUID.randomUUID().toString(),
+            "userId", UUID.randomUUID().toString(),
+            "reviewAuthorId", UUID.randomUUID().toString(),
             "value", -1
         ));
 
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() ->
-            verify(notificationService, atLeastOnce())
-                .queueNotification(any(NotificationRequest.class))
+        await().pollDelay(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(6)).untilAsserted(() ->
+            verifyNoInteractions(notificationService)
         );
     }
 
     @Test
-    void voteMessageWithMissingUserIdIsIgnoredGracefully() {
-        // When userId is absent, handleReviewVoted should return early without queuing
+    void voteMessageWithMissingAuthorIdIsIgnoredGracefully() {
         rabbitTemplate.convertAndSend("review.events", "review.voted", Map.of(
             "reviewId", UUID.randomUUID().toString(),
+            "userId", UUID.randomUUID().toString(),
             "value", 1
         ));
 
-        // Give enough time for the listener to pick up and process the message
         await().pollDelay(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(6)).untilAsserted(() ->
-            Mockito.verifyNoInteractions(notificationService)
+            verifyNoInteractions(notificationService)
         );
     }
 }

@@ -505,6 +505,13 @@ textarea {
   margin: 0 0 0.75rem;
 }
 
+.login-divider {
+  text-align: center;
+  color: var(--muted);
+  margin: 1rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -938,6 +945,56 @@ textarea {
   font-size: 0.8rem;
 }
 
+.review-vote-bar {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.review-vote-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vote-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.vote-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.vote-btn.active.up {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.vote-btn.active.down {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.vote-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.review-vote-hint,
+.review-vote-msg {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
 .journey-banner {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -957,6 +1014,128 @@ textarea {
 .journey-node strong {
   display: block;
   margin-bottom: 0.25rem;
+}
+
+.recommendation-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.recommendation-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.recommendation-section-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.recommendation-meta {
+  margin: 0 0 1rem;
+  font-size: 0.85rem;
+}
+
+.recommendation-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendation-row {
+  display: grid;
+  grid-template-columns: auto 72px 1fr;
+  gap: 0.85rem;
+  align-items: start;
+  padding: 0.85rem;
+  margin-bottom: 0;
+}
+
+.recommendation-rank {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 1.5rem;
+  padding-top: 0.15rem;
+}
+
+.recommendation-poster {
+  width: 72px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.recommendation-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.recommendation-poster .poster-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.recommendation-body h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.recommendation-why {
+  margin: 0.35rem 0 0.15rem;
+  font-size: 0.9rem;
+}
+
+.recommendation-score {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+}
+
+.dev-tools-panel {
+  margin-top: 0.5rem;
+}
+
+.dev-tools-toggle {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dev-tools-body {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .recommendations-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-row {
+    grid-template-columns: auto 56px 1fr;
+  }
+
+  .recommendation-poster {
+    width: 56px;
+  }
 }
 
 @media (max-width: 900px) {

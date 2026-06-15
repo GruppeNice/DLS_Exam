@@ -59,14 +59,17 @@ def create_app(app_settings: Settings | None = None, testing: bool = False) -> F
     async def lifespan(_: FastAPI):
         if not testing and os.getenv("DISABLE_BACKGROUND_JOBS") != "1":
             rabbit_consumer.start()
-            scheduler.add_job(
-                _scheduled_retrain,
-                trigger="interval",
-                minutes=app_settings.model_retrain_interval_minutes,
-                id="model-retrain",
-                replace_existing=True,
-            )
-            scheduler.start()
+            if app_settings.model_retrain_interval_minutes > 0:
+                scheduler.add_job(
+                    _scheduled_retrain,
+                    trigger="interval",
+                    minutes=app_settings.model_retrain_interval_minutes,
+                    id="model-retrain",
+                    replace_existing=True,
+                )
+                scheduler.start()
+            else:
+                logger.info("Scheduled retrain disabled (MODEL_RETRAIN_INTERVAL_MINUTES=0)")
         logger.info("Recommendation service started")
         yield
         if not testing and os.getenv("DISABLE_BACKGROUND_JOBS") != "1":

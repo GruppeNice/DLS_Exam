@@ -12,6 +12,13 @@ export interface Review {
   userRating?: number | null;
 }
 
+export interface ReviewVote {
+  id: string;
+  userId: string;
+  reviewId: string;
+  value: number;
+}
+
 export interface Rating {
   id: string;
   userId: string;
@@ -51,6 +58,22 @@ export async function getReviewsByMovie(movieId: string): Promise<ApiResult<Revi
 
 export async function getReview(reviewId: string): Promise<ApiResult<Review>> {
   return request(`${API.review}/reviews/${reviewId}`);
+}
+
+export async function getReviewVotes(reviewId: string): Promise<ApiResult<ReviewVote[]>> {
+  return request(`${API.review}/review-votes/${reviewId}`);
+}
+
+export async function addReviewVote(
+  userId: string,
+  reviewId: string,
+  value: 1 | -1,
+): Promise<ApiResult<unknown>> {
+  return request(`${API.review}/review-votes/add`, {
+    method: "POST",
+    headers: jsonHeaders(null),
+    body: JSON.stringify({ userId, reviewId, value }),
+  });
 }
 
 export async function getRating(ratingId: string): Promise<ApiResult<Rating>> {

@@ -42,36 +42,57 @@ class ReviewVotesServiceTest {
     @Test
     void addReviewVotePublishesEventForUpvote() {
         UUID reviewId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        UUID voterId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         Review review = new Review();
         review.setId(reviewId);
+        review.setUserId(authorId);
+        review.setReviewText("Solid watch");
 
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+        when(reviewVotesRepository.findByReviewAndUserId(review, voterId)).thenReturn(Optional.empty());
         when(reviewVotesRepository.save(any(ReviewVote.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        reviewVotesService.addReviewVote(new ReviewVotesRequest(userId, reviewId, 1));
+        reviewVotesService.addReviewVote(new ReviewVotesRequest(voterId, reviewId, 1));
 
+        ArgumentCaptor<UUID> authorCaptor = ArgumentCaptor.forClass(UUID.class);
         ArgumentCaptor<Integer> valueCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(reviewEventPublisher).reviewVoted(any(UUID.class), any(UUID.class), valueCaptor.capture(), any());
+        verify(reviewEventPublisher).reviewVoted(
+            any(UUID.class),
+            any(UUID.class),
+            authorCaptor.capture(),
+            any(String.class),
+            valueCaptor.capture(),
+            any()
+        );
+        assertEquals(authorId, authorCaptor.getValue());
         assertEquals(1, valueCaptor.getValue());
     }
 
     @Test
     void addReviewVotePublishesEventForDownvote() {
         UUID reviewId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        UUID voterId = UUID.randomUUID();
+        UUID authorId = UUID.randomUUID();
         Review review = new Review();
         review.setId(reviewId);
+        review.setUserId(authorId);
 
         when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+        when(reviewVotesRepository.findByReviewAndUserId(review, voterId)).thenReturn(Optional.empty());
         when(reviewVotesRepository.save(any(ReviewVote.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        reviewVotesService.addReviewVote(new ReviewVotesRequest(userId, reviewId, -1));
+        reviewVotesService.addReviewVote(new ReviewVotesRequest(voterId, reviewId, -1));
 
         ArgumentCaptor<Integer> valueCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(reviewEventPublisher).reviewVoted(any(UUID.class), any(UUID.class), valueCaptor.capture(), any());
+        verify(reviewEventPublisher).reviewVoted(
+            any(UUID.class),
+            any(UUID.class),
+            any(UUID.class),
+            any(String.class),
+            valueCaptor.capture(),
+            any()
+        );
         assertEquals(-1, valueCaptor.getValue());
     }
 }
-
-

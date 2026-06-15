@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { AppLayout } from "@/components/Layout";
 import { LoginPage } from "@/pages/LoginPage";
+import { OAuthCallbackPage } from "@/pages/OAuthCallbackPage";
 import { OverviewPage } from "@/pages/OverviewPage";
 import { CatalogPage } from "@/pages/CatalogPage";
 import { PlaybackPage } from "@/pages/PlaybackPage";
@@ -16,6 +17,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<OverviewPage />} />
             <Route path="/catalog" element={<CatalogPage />} />

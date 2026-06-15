@@ -42,8 +42,22 @@ public class ReviewEventPublisher {
         ));
     }
 
-    public void reviewVoted(UUID reviewId, UUID userId, int value, Instant occurredAt) {
-        publish("review.voted", new ReviewVotedEvent(reviewId, userId, value, occurredAt.toString()));
+    public void reviewVoted(
+        UUID reviewId,
+        UUID voterUserId,
+        UUID reviewAuthorId,
+        String reviewText,
+        int value,
+        Instant occurredAt
+    ) {
+        publish("review.voted", new ReviewVotedEvent(
+            reviewId,
+            voterUserId,
+            reviewAuthorId,
+            reviewText,
+            value,
+            occurredAt.toString()
+        ));
     }
 
     private void publish(String routingKey, Object event) {
@@ -72,6 +86,8 @@ public class ReviewEventPublisher {
     public record ReviewVotedEvent(
         UUID reviewId,
         UUID userId,
+        UUID reviewAuthorId,
+        String reviewText,
         int value,
         String occurredAt
     ) {

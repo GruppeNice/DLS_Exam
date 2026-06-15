@@ -8,12 +8,11 @@ import com.ratingandreviewservice.model.ReviewVote;
 import com.ratingandreviewservice.repository.ReviewRepository;
 import com.ratingandreviewservice.repository.ReviewVotesRepository;
 import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ReviewVotesService {
@@ -32,18 +31,43 @@ public class ReviewVotesService {
         this.eventPublisher = eventPublisher;
     }
 
-    public void addReviewVote(ReviewVotesRequest reviewVotesRequest){
-        if(reviewRepository.findById(reviewVotesRequest.reviewId()).isEmpty()){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewVotesRequest.reviewId() + " not found");
+    public void addReviewVote(ReviewVotesRequest reviewVotesRequest) {
+        if (reviewVotesRequest.value() != 1 && reviewVotesRequest.value() != -1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vote value must be 1 (upvote) or -1 (downvote)");
         }
-        ReviewVote newReviewVote = fromDTO(reviewVotesRequest);
-        newReviewVote.setId(UUID.randomUUID());
-        ReviewVote savedReviewVote = reviewVotesRepository.save(newReviewVote);
+
+        Review review = reviewRepository.findById(reviewVotesRequest.reviewId()).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewVotesRequest.reviewId() + " not found")
+        );
+
+        if (review.getUserId().equals(reviewVotesRequest.userId())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot vote on your own review");
+        }
+
+        ReviewVote savedReviewVote = reviewVotesRepository
+            .findByReviewAndUserId(review, reviewVotesRequest.userId())
+            .map(existing -> {
+                if (existing.getValue() == reviewVotesRequest.value()) {
+                    return existing;
+                }
+                existing.setValue(reviewVotesRequest.value());
+                return reviewVotesRepository.save(existing);
+            })
+            .orElseGet(() -> {
+                ReviewVote reviewVote = new ReviewVote();
+                reviewVote.setId(UUID.randomUUID());
+                reviewVote.setReview(review);
+                reviewVote.setUserId(reviewVotesRequest.userId());
+                reviewVote.setValue(reviewVotesRequest.value());
+                return reviewVotesRepository.save(reviewVote);
+            });
 
         try {
             eventPublisher.reviewVoted(
                 savedReviewVote.getReview().getId(),
                 savedReviewVote.getUserId(),
+                review.getUserId(),
+                review.getReviewText() == null ? "" : review.getReviewText(),
                 savedReviewVote.getValue(),
                 Instant.now()
             );
@@ -52,28 +76,10 @@ public class ReviewVotesService {
         }
     }
 
-    public List<ReviewVotesResponse> getReviewVotesByReviewId(UUID reviewId){
-        Review review = reviewRepository.findById(reviewId).orElse(null);
-        if(review == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewId + " not found");
-        }
-        List<ReviewVotesResponse> reviewVotesResponses = reviewVotesRepository.findReviewVoteByReview(review);
-        if(reviewVotesResponses.isEmpty()){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ReviewVotes with review id " + reviewId + " not found");
-        }
-        return reviewVotesResponses;
-    }
-
-    public ReviewVote fromDTO(ReviewVotesRequest reviewVotesRequest) {
-        Review review = reviewRepository.findById(reviewVotesRequest.reviewId()).orElse(null);
-        if(review == null){
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewVotesRequest.reviewId() + " not found");
-        }
-        ReviewVote reviewVote = new ReviewVote();
-        reviewVote.setReview(review);
-        reviewVote.setUserId(reviewVotesRequest.userId());
-        reviewVote.setValue(reviewVotesRequest.value());
-        return reviewVote;
+    public List<ReviewVotesResponse> getReviewVotesByReviewId(UUID reviewId) {
+        Review review = reviewRepository.findById(reviewId).orElseThrow(
+            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Review with id " + reviewId + " not found")
+        );
+        return reviewVotesRepository.findReviewVoteByReview(review);
     }
 }
-

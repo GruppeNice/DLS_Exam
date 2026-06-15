@@ -89,10 +89,10 @@ flowchart TB
 | `frontend/` | Implemented | React + TypeScript test UI (Stream Console) |
 | `infra/docker` | Implemented | Unified compose: 7 services + frontend + RabbitMQ + MailHog + MySQL |
 | `infra/k8s` | Implemented (local) | `dls-local.yaml` + `build-images.ps1` for Minikube/Docker Desktop |
-| `infra/messaging` | Scaffold only | Shared broker topology docs planned |
-| `infra/observability` | Scaffold only | Prometheus/Grafana planned |
+| `infra/messaging` | Implemented | `TOPOLOGY.md`, `definitions.json`, broker import docs |
+| `infra/observability` | Implemented | Prometheus, Grafana, Loki, Promtail, Zipkin (optional compose overlay) |
 | `infra/ci-cd` | Scaffold only | GitHub Actions planned |
-| `packages/contracts` | Scaffold only | Shared OpenAPI/AsyncAPI planned |
+| `packages/contracts` | Implemented | Consolidated AsyncAPI (`dls-platform-events.yaml`) + JSON event schemas |
 | API Gateway | Not started | Spring Cloud Gateway planned; frontend/nginx proxy used today |
 
 ---
@@ -228,6 +228,8 @@ docker compose up --build
 | Port | `8085` |
 | Database | MySQL `review_db` on host `3311` |
 | API style | REST |
+| AsyncAPI stub | `services/review-rating-service/api/asyncapi.yaml` |
+| Metrics | `GET /actuator/prometheus` |
 
 **Events produced:** `content.rated`, `content.reviewed` on exchange `review.events`.
 
@@ -248,7 +250,7 @@ docker compose up --build
 **Consumes (RabbitMQ):**
 - `playback.started`, `playback.progress.updated`, `playback.stopped` from `streaming.events`
 - `subscription.activated` from `billing.events`
-- `content.rated` from `review.events` (when Review Service exists)
+- `content.rated` from `review.events`
 
 **REST endpoints:**
 - `GET /api/v1/recommendations/me` — personalized list (JWT)
@@ -280,8 +282,10 @@ docker compose up --build
 | Database | MySQL `engagement_db` on host `3312` |
 | Style | Async-first (RabbitMQ consumers) + REST for manual triggers |
 | Mail | MailHog in local compose (`8025` UI, SMTP `1025`) |
+| AsyncAPI stub | `services/engagement-service/api/asyncapi.yaml` |
+| Metrics | `GET /actuator/prometheus` |
 
-**Consumes:** `subscription.activated`, `playback.stopped`, `content.created` (plus internal `notification-queue`).  
+**Consumes:** `subscription.activated`, `playback.stopped`, `content.created`, `content.reviewed` (plus internal `notification-queue`).  
 **Delivers:** email notifications via Thymeleaf templates.
 
 Scaling with KEDA ScaledJob in Kubernetes is planned for production-style deployments.
@@ -302,6 +306,10 @@ Scaling with KEDA ScaledJob in Kubernetes is planned for production-style deploy
 | Recommendation Service | 8090 | `recommendation-service` |
 | RabbitMQ | `5672` / UI `15672` | `dls-rabbitmq` (shared) |
 | MailHog | SMTP `1025` / UI `8025` | `mailhog` |
+| Grafana | 3001 | `grafana` (observability overlay; `admin` / `admin`) |
+| Prometheus | 9090 | `prometheus` |
+| Zipkin | 9411 | `zipkin` |
+| Loki | 3100 | `loki` (query via Grafana Explore) |
 
 | MySQL database | Host port |
 |----------------|-----------|
@@ -313,13 +321,26 @@ Scaling with KEDA ScaledJob in Kubernetes is planned for production-style deploy
 | `review_db` | 3311 |
 | `engagement_db` | 3312 |
 
-The platform uses **one shared RabbitMQ**, **MailHog**, and **database-per-service MySQL 8.4** instances. Run everything from the repo root:
+The platform uses **one shared RabbitMQ**, **MailHog**, and **database-per-service MySQL 8.4** instances on the **`dls-platform` Docker network**. Run everything from the repo root:
 
 ```bash
 docker compose -f infra/docker/docker-compose.yml up --build
 ```
 
+**With observability** (metrics, logs, traces):
+
+```bash
+docker compose \
+  -f infra/docker/docker-compose.yml \
+  -f infra/observability/docker-compose.yml \
+  up --build -d
+```
+
+Start the main platform first if observability was brought up alone — Java services must join `dls-platform` before Prometheus can scrape them.
+
 Open **http://localhost:3000** for the Stream Console test UI.
+
+**Network troubleshooting:** if services fail with `UnknownHostException` for `user-service-db` or similar, old containers may be on a different network. Run `docker compose -f infra/docker/docker-compose.yml down` then `up --build` again. See `infra/docker/README.md`.
 
 Per-service `docker-compose.yml` files include the shared compose definition for convenience.
 
@@ -373,11 +394,21 @@ Shared dev secret (all services): see each service `config/.env.example`.
 | Catalog Service | `content.created`, `content.updated`, `content.removed` |
 | Review Service | `content.rated`, `content.reviewed`, `review.moderated` (moderated planned) |
 
-**Consumers today:** Recommendation (playback, billing, review), Catalog (review), Engagement (`subscription.activated`, `playback.stopped`, `content.created`).
+**Consumers today:** Recommendation (playback, billing, review), Catalog (review), Engagement (`subscription.activated`, `playback.stopped`, `content.created`, `content.reviewed`).
 
 **Exception (synchronous read):** Streaming calls Billing `GET /subscriptions/active/{userId}` before playback. This is an intentional gate, not primary inter-service communication.
 
-Event contracts (stubs): each service `api/asyncapi.yaml`. Shared contracts planned in `packages/contracts/`.
+**Event contracts**
+
+| Artifact | Location |
+|----------|----------|
+| Canonical AsyncAPI (all events) | `packages/contracts/asyncapi/dls-platform-events.yaml` |
+| JSON Schema payloads | `packages/contracts/schemas/events.json` |
+| Human-readable topology | `infra/messaging/TOPOLOGY.md` |
+| Broker import (optional) | `infra/messaging/definitions.json` |
+| Per-service stubs | `services/*/api/asyncapi.yaml` |
+
+Services declare exchanges/queues at startup via Spring `RabbitAdmin` or the Python consumer; importing `definitions.json` is optional for local dev.
 
 ---
 
@@ -417,6 +448,8 @@ Manual API sequence (all services running):
 
 Check RabbitMQ management UI (`15672`) and MailHog (`8025`) for async side effects.
 
+**With observability running:** after the demo flow, open Grafana (`http://localhost:3001`) → Explore → Loki → `{compose_service="frontend"}` to see request logs, or Zipkin (`http://localhost:9411`) to inspect cross-service traces.
+
 ---
 
 ## 8. Repository layers
@@ -447,8 +480,8 @@ React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx 
 |--------|---------|
 | `infra/docker` | Full-stack local compose, shared networks |
 | `infra/k8s` | Minikube/k3s manifests, KEDA ScaledJob for Engagement |
-| `infra/messaging` | Exchange/queue bindings, broker config |
-| `infra/observability` | Prometheus, Grafana, log aggregation |
+| `infra/messaging` | RabbitMQ topology (`TOPOLOGY.md`), broker `definitions.json` |
+| `infra/observability` | Prometheus, Grafana, Loki, Promtail, Zipkin compose overlay |
 | `infra/ci-cd` | GitHub Actions pipelines |
 | `infra/security` | Policies, secrets templates |
 
@@ -456,7 +489,7 @@ React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx 
 
 | Folder | Purpose |
 |--------|---------|
-| `packages/contracts` | Cross-service API and event schemas |
+| `packages/contracts` | Consolidated AsyncAPI + JSON Schema for platform events |
 | `packages/shared-types` | Shared DTOs |
 | `packages/shared-utils` | Reusable helpers |
 
@@ -485,16 +518,50 @@ Open the **repo root** in the IDE (not a single service folder) so Java language
 
 ---
 
-## 9. Observability (per implemented service)
+## 9. Observability
 
-Each Spring Boot service exposes Actuator:
+### 9.1 Per-service instrumentation
 
-- `GET /actuator/health`
-- `GET /actuator/prometheus`
+| Service | Health | Metrics | Tracing |
+|---------|--------|---------|---------|
+| Java services (all six) | `GET /actuator/health` | `GET /actuator/prometheus` | Micrometer Tracing → Zipkin |
+| recommendation-service | `GET /health` | `GET /metrics` | — |
 
-Swagger UI: `GET /swagger-ui.html`
+Parent POM and service `application.yml` configure Micrometer Prometheus registry and Zipkin export. Main compose injects:
 
-Centralized monitoring via `infra/observability` is planned (Prometheus scrape + Grafana dashboards).
+- `ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans`
+- `TRACING_SAMPLE_PROBABILITY=1.0` (local dev; reduce in production)
+
+`/actuator/prometheus` is permitted without JWT on User, Billing, and Streaming security configs (and equivalent on other Java services).
+
+Swagger UI: `GET /swagger-ui.html` (Java REST services).
+
+### 9.2 Central stack (`infra/observability/`)
+
+| Tool | URL | Role |
+|------|-----|------|
+| Grafana | http://localhost:3001 | Dashboards (`admin` / `admin`) |
+| Prometheus | http://localhost:9090 | Scrapes all service metrics |
+| Loki | http://localhost:3100 | Log store (query in Grafana) |
+| Zipkin | http://localhost:9411 | Distributed traces |
+| Promtail | — | Ships container stdout → Loki via Docker socket |
+
+Grafana datasources (Prometheus, Loki, Zipkin) are auto-provisioned from `infra/observability/grafana/provisioning/`.
+
+**Start observability only** (platform must already be running):
+
+```bash
+docker compose -f infra/observability/docker-compose.yml up -d
+```
+
+**Quick checks**
+
+1. Prometheus → **Status → Targets** — all `*-service` jobs should be `UP`.
+2. Grafana → **Explore → Prometheus** — e.g. `rate(http_server_requests_seconds_count[5m])`.
+3. Grafana → **Explore → Loki** — e.g. `{compose_service="frontend"}` for nginx access logs, or `{compose_service="streaming-service"}`.
+4. Zipkin — search traces after a few API calls through the frontend or Postman.
+
+See `infra/observability/README.md` for config file paths.
 
 ---
 
@@ -578,12 +645,14 @@ docker compose up --build
 1. ~~Unified docker compose (all services + frontend)~~ (done)
 2. ~~Catalog, Review, Engagement, Recommendation wiring~~ (done)
 3. ~~Local K8s manifests~~ (done)
-4. API Gateway — single frontend entry point
-5. `packages/contracts` — shared OpenAPI/AsyncAPI schemas
-6. `infra/observability` — Prometheus scrape + Grafana dashboards
-7. `infra/ci-cd` — GitHub Actions pipelines
-8. Engagement KEDA ScaledJob + K8s probes/PVCs for databases
-9. Full Google OAuth callback flow
+4. ~~`packages/contracts` — shared AsyncAPI + JSON event schemas~~ (done)
+5. ~~`infra/observability` — Prometheus, Grafana, Loki, Zipkin~~ (done)
+6. ~~`infra/messaging` — documented topology + broker definitions~~ (done)
+7. API Gateway — single frontend entry point
+8. `infra/ci-cd` — GitHub Actions pipelines
+9. Engagement KEDA ScaledJob + K8s probes/PVCs for databases
+10. Full Google OAuth callback flow
+11. `infra/security` — policies and secrets templates
 
 ---
 
@@ -601,4 +670,4 @@ docker compose up --build
 
 ---
 
-*Last updated: full MySQL stack, event wiring (review publisher, engagement domain consumers), Flyway seeds, local K8s, Stream Console frontend.*
+*Last updated: observability stack (Prometheus/Grafana/Loki/Zipkin), shared event contracts, RabbitMQ topology docs, Micrometer instrumentation on all services, `dls-platform` Docker network.*

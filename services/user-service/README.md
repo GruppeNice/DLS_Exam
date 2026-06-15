@@ -2,10 +2,27 @@
 
 Spring Boot user management microservice implementing:
 - registration and login with JWT
-- Google OAuth configuration placeholders
+- Google OAuth 2.0 (optional — set `GOOGLE_OAUTH_ENABLED=true` and Google credentials)
 - account status lifecycle (active, suspended, banned)
 - RabbitMQ domain events (`UserRegistered`, `UserSuspended`, `UserDeleted`)
 - Flyway database migrations
+
+## Google OAuth (optional)
+
+1. Create OAuth 2.0 credentials in [Google Cloud Console](https://console.cloud.google.com/).
+2. Authorized redirect URI: `http://localhost:8081/login/oauth2/code/google`
+3. Set environment variables:
+
+```bash
+GOOGLE_OAUTH_ENABLED=true
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_OAUTH_FRONTEND_REDIRECT=http://localhost:3000/oauth/callback
+```
+
+4. Restart user-service and open the Stream Console login page — **Continue with Google** appears when enabled.
+
+Check status: `GET /api/v1/oauth/google/status`
 
 ## Run locally
 

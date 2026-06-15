@@ -98,7 +98,47 @@ kubectl port-forward svc/mailhog 8025:8025
 ## 4. Tear down
 
 ```bash
+kubectl delete -f infra/k8s/engagement-scaledjob.yaml
 kubectl delete -f infra/k8s/dls-local.yaml
+```
+
+## 5. KEDA ScaledJob (Engagement notification workers)
+
+The engagement **Deployment** (`ENGAGEMENT_MODE=server`) exposes the REST API and consumes domain events. Outbound email delivery is handled by short-lived **job** pods scaled by [KEDA](https://keda.sh/) on `notification-queue` depth.
+
+### Install KEDA (once per cluster)
+
+```bash
+kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v2.16.1/keda-2.16.1.yaml
+```
+
+Verify:
+
+```bash
+kubectl get pods -n keda
+```
+
+### Deploy the ScaledJob
+
+After `dls-local.yaml` is running and RabbitMQ is healthy:
+
+```bash
+kubectl apply -f infra/k8s/engagement-scaledjob.yaml
+```
+
+Check workers:
+
+```bash
+kubectl get scaledjob
+kubectl get jobs -w
+```
+
+Each job pod runs `ENGAGEMENT_MODE=job`: receives one message from `notification-queue`, sends the email via MailHog, then exits. KEDA creates more jobs when the queue length exceeds the trigger threshold (`value: "1"`).
+
+To remove workers only:
+
+```bash
+kubectl delete -f infra/k8s/engagement-scaledjob.yaml
 ```
 
 ## Notes

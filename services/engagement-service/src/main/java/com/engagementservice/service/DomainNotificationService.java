@@ -104,25 +104,28 @@ public class DomainNotificationService {
     }
 
     public void handleReviewVoted(Map<String, Object> payload) {
-        UUID userId = parseUuid(payload.get("userId"));
-        UUID reviewId = parseUuid(payload.get("reviewId"));
-        if (userId == null || reviewId == null) {
+        UUID voterUserId = parseUuid(payload.get("userId"));
+        UUID reviewAuthorId = parseUuid(payload.get("reviewAuthorId"));
+        if (voterUserId == null || reviewAuthorId == null) {
             return;
         }
 
         int value = Integer.parseInt(String.valueOf(payload.getOrDefault("value", 0)));
-        String voteLabel = value > 0 ? "upvote" : "downvote";
+        if (value <= 0 || voterUserId.equals(reviewAuthorId)) {
+            return;
+        }
+
+        String reviewText = String.valueOf(payload.getOrDefault("reviewText", ""));
 
         NotificationRequest request = new NotificationRequest();
         request.setType(NotificationType.EMAIL);
-        request.setRecipient(userEmailResolver.resolve(userId));
-        request.setSubject("Your review vote was recorded");
-        request.setTemplateName("review-published");
+        request.setRecipient(userEmailResolver.resolve(reviewAuthorId));
+        request.setSubject("Your review got an upvote on DLS");
+        request.setTemplateName("review-upvoted");
         request.setTemplateVariables(Map.of(
-            "name", userEmailResolver.resolve(userId),
-            "title", "your review " + reviewId,
-            "reviewText", "A " + voteLabel + " was recorded for your review.",
-            "spoiler", "false"
+            "name", userEmailResolver.resolve(reviewAuthorId),
+            "title", String.valueOf(payload.getOrDefault("title", "your pick")),
+            "reviewText", reviewText
         ));
         notificationService.queueNotification(request);
     }
