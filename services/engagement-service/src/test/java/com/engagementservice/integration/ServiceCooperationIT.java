@@ -19,10 +19,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +39,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.RabbitMQContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -70,13 +71,11 @@ class ServiceCooperationIT {
         .withExposedPorts(5672, 15672);
 
     @Container
-    static GenericContainer<?> billingDbContainer = new GenericContainer<>("mysql:8.4")
-        .withEnv("MYSQL_DATABASE", "billing_db")
-        .withEnv("MYSQL_USER", "billing_user")
-        .withEnv("MYSQL_PASSWORD", "billing_password")
-        .withEnv("MYSQL_ROOT_PASSWORD", "root")
-        .withExposedPorts(3306)
-        .waitingFor(Wait.forLogMessage(".*ready for connections.*\\n", 1));
+    static MySQLContainer<?> billingDbContainer = new MySQLContainer<>("mysql:8.4")
+        .withDatabaseName("billing_db")
+        .withUsername("billing_user")
+        .withPassword("billing_password")
+        .withStartupAttempts(3);
 
     @MockitoBean
     private UserEmailResolver userEmailResolver;
@@ -94,10 +93,12 @@ class ServiceCooperationIT {
 
     @BeforeAll
     static void startBillingService() throws Exception {
-        Path repoRoot = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize().getParent().getParent();
-        Path billingJar = repoRoot.resolve("services/billing-service/target/billing-service-0.0.1-SNAPSHOT.jar");
+        Path repoRoot = findRepoRoot();
+        Path engagementServiceDir = repoRoot.resolve("services/engagement-service");
+        Path billingServiceDir = repoRoot.resolve("services/billing-service");
+        Path billingJar = billingServiceDir.resolve("target/billing-service-0.0.1-SNAPSHOT.jar");
         if (!billingJar.toFile().exists()) {
-            buildBillingJar(repoRoot);
+            buildBillingJar(repoRoot, engagementServiceDir, billingServiceDir);
         }
 
         ProcessBuilder pb = new ProcessBuilder(
@@ -107,10 +108,12 @@ class ServiceCooperationIT {
         );
         Map<String, String> env = pb.environment();
         env.put("SERVER_PORT", Integer.toString(BILLING_PORT));
-        env.put("DB_URL", "jdbc:mysql://localhost:" + billingDbContainer.getMappedPort(3306)
-            + "/billing_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC");
-        env.put("DB_USERNAME", "billing_user");
-        env.put("DB_PASSWORD", "billing_password");
+        env.put("DB_URL", withJdbcParams(
+            billingDbContainer.getJdbcUrl(),
+            "allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
+        ));
+        env.put("DB_USERNAME", billingDbContainer.getUsername());
+        env.put("DB_PASSWORD", billingDbContainer.getPassword());
         env.put("RABBITMQ_HOST", rabbitContainer.getHost());
         env.put("RABBITMQ_PORT", Integer.toString(rabbitContainer.getAmqpPort()));
         env.put("RABBITMQ_USERNAME", "guest");
@@ -119,7 +122,11 @@ class ServiceCooperationIT {
         env.put("JWT_SECRET_BASE64", BILLING_JWT_SECRET_BASE64);
         env.put("PAYMENT_SIMULATED_FAILURE_RATE", "0.0");
 
-        File logFile = repoRoot.resolve("services/engagement-service/target/billing-service-it.log").toFile();
+        File logFile = billingServiceLogFile(engagementServiceDir);
+        File parentDir = logFile.getParentFile();
+        if (parentDir != null) {
+            parentDir.mkdirs();
+        }
         pb.redirectErrorStream(true);
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
 
@@ -181,7 +188,8 @@ class ServiceCooperationIT {
         Instant deadline = Instant.now().plus(Duration.ofMinutes(3));
         while (Instant.now().isBefore(deadline)) {
             if (billingProcess != null && !billingProcess.isAlive()) {
-                throw new IllegalStateException("Billing service process exited before becoming healthy");
+                throw new IllegalStateException("Billing service process exited before becoming healthy. Last log lines:\n"
+                    + tailBillingServiceLog());
             }
             try {
                 HttpRequest req = HttpRequest.newBuilder()
@@ -200,30 +208,81 @@ class ServiceCooperationIT {
         throw new IllegalStateException("Billing service did not become healthy in time");
     }
 
-    private static void buildBillingJar(Path repoRoot) throws Exception {
+    private static File billingServiceLogFile(Path engagementServiceDir) {
+        return engagementServiceDir.resolve("target/billing-service-it.log").toFile();
+    }
+
+    private static String withJdbcParams(String jdbcUrl, String queryParams) {
+        return jdbcUrl.contains("?") ? jdbcUrl + "&" + queryParams : jdbcUrl + "?" + queryParams;
+    }
+
+    private static String tailBillingServiceLog() {
+        try {
+            Path repoRoot = findRepoRoot();
+            Path logPath = repoRoot.resolve("services/engagement-service/target/billing-service-it.log");
+            if (!logPath.toFile().exists()) {
+                return "(billing log file not found: " + logPath + ")";
+            }
+            List<String> lines = Files.readAllLines(logPath, StandardCharsets.UTF_8);
+            int start = Math.max(0, lines.size() - 30);
+            return String.join(System.lineSeparator(), lines.subList(start, lines.size()));
+        } catch (Exception e) {
+            return "(unable to read billing log tail: " + e.getMessage() + ")";
+        }
+    }
+
+    private static void buildBillingJar(Path repoRoot, Path engagementServiceDir, Path billingServiceDir) throws Exception {
         ProcessBuilder pb;
+        Path billingPom = billingServiceDir.resolve("pom.xml");
+        String command;
         if (isWindows()) {
-            String mvnw = repoRoot.resolve("services/engagement-service/mvnw.cmd").toString();
-            String cmd = "\"" + mvnw + "\" -B -f \"" + repoRoot.resolve("services/billing-service/pom.xml")
-                + "\" -DskipTests package";
-            pb = new ProcessBuilder("cmd.exe", "/c", cmd);
+            Path mvnw = engagementServiceDir.resolve("mvnw.cmd");
+            if (mvnw.toFile().exists()) {
+                command = "\"" + mvnw + "\" -B -f \"" + billingPom + "\" -DskipTests package";
+            } else {
+                command = "mvn -B -f \"" + billingPom + "\" -DskipTests package";
+            }
+            pb = new ProcessBuilder("cmd.exe", "/c", command);
         } else {
-            String mvnw = repoRoot.resolve("services/engagement-service/mvnw").toString();
-            String cmd = mvnw + " -B -f \"" + repoRoot.resolve("services/billing-service/pom.xml")
-                + "\" -DskipTests package";
-            pb = new ProcessBuilder("/bin/sh", "-lc", cmd);
+            Path mvnw = engagementServiceDir.resolve("mvnw");
+            if (mvnw.toFile().exists()) {
+                command = "sh \"" + mvnw + "\" -B -f \"" + billingPom + "\" -DskipTests package";
+            } else {
+                command = "mvn -B -f \"" + billingPom + "\" -DskipTests package";
+            }
+            pb = new ProcessBuilder("/bin/sh", "-lc", command);
         }
         pb.directory(repoRoot.toFile());
         pb.redirectErrorStream(true);
-        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(
-            repoRoot.resolve("services/engagement-service/target/billing-build-it.log").toFile()
-        ));
+        File buildLog = engagementServiceDir.resolve("target/billing-build-it.log").toFile();
+        File parentDir = buildLog.getParentFile();
+        if (parentDir != null) {
+            parentDir.mkdirs();
+        }
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(buildLog));
 
         Process process = pb.start();
         int exit = process.waitFor();
         if (exit != 0) {
-            throw new IllegalStateException("Failed to build billing-service jar for cooperation test");
+            throw new IllegalStateException(
+                "Failed to build billing-service jar for cooperation test (exit=" + exit + ") using command: "
+                    + command + ". Check log: " + buildLog.getAbsolutePath()
+            );
         }
+    }
+
+    private static Path findRepoRoot() {
+        Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        while (current != null) {
+            boolean hasEngagement = current.resolve("services/engagement-service").toFile().isDirectory();
+            boolean hasBilling = current.resolve("services/billing-service").toFile().isDirectory();
+            if (hasEngagement && hasBilling) {
+                return current;
+            }
+            current = current.getParent();
+        }
+        throw new IllegalStateException("Could not locate repository root from user.dir="
+            + System.getProperty("user.dir"));
     }
 
     private static String billingBaseUrl() {
