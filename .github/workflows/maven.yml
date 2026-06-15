@@ -21,6 +21,8 @@ jobs:
             pom: services/billing-service/pom.xml
           - name: catalog-service
             pom: services/catalog-service/pom.xml
+          - name: streaming-service
+            pom: services/streaming-service/pom.xml
 
     name: Test ${{ matrix.name }}
 
