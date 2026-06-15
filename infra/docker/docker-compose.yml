@@ -158,6 +158,9 @@ services:
         SERVICE_PORT: 8081
     container_name: user-service
     restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
     environment:
       <<: [*jwt-secret, *observability-env]
       SERVER_PORT: 8081
@@ -259,7 +262,7 @@ services:
       STREAMING_EVENTS_EXCHANGE: streaming.events
       BILLING_EVENTS_EXCHANGE: billing.events
       REVIEW_EVENTS_EXCHANGE: review.events
-      MODEL_RETRAIN_INTERVAL_MINUTES: 30
+      MODEL_RETRAIN_INTERVAL_MINUTES: 0
       RECOMMENDATION_LIST_SIZE: 10
     ports:
       - "8090:8090"

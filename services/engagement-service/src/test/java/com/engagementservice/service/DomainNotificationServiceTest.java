@@ -1,7 +1,8 @@
 package com.engagementservice.service;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.engagementservice.dto.NotificationRequest;
@@ -31,39 +32,48 @@ class DomainNotificationServiceTest {
     }
 
     @Test
-    void handleReviewVotedBuildsUpvoteNotification() {
-        UUID userId = UUID.randomUUID();
-        UUID reviewId = UUID.randomUUID();
-        when(userEmailResolver.resolve(userId)).thenReturn("user@example.com");
+    void handleReviewVotedEmailsAuthorOnUpvote() {
+        UUID voterUserId = UUID.randomUUID();
+        UUID reviewAuthorId = UUID.randomUUID();
+        when(userEmailResolver.resolve(reviewAuthorId)).thenReturn("author@example.com");
 
         domainNotificationService.handleReviewVoted(Map.of(
-            "userId", userId.toString(),
-            "reviewId", reviewId.toString(),
-            "value", 1
+            "userId", voterUserId.toString(),
+            "reviewAuthorId", reviewAuthorId.toString(),
+            "reviewId", UUID.randomUUID().toString(),
+            "value", 1,
+            "reviewText", "Great movie"
         ));
 
         ArgumentCaptor<NotificationRequest> requestCaptor = ArgumentCaptor.forClass(NotificationRequest.class);
         verify(notificationService).queueNotification(requestCaptor.capture());
-        String reviewText = String.valueOf(requestCaptor.getValue().getTemplateVariables().get("reviewText"));
-        assertTrue(reviewText.contains("upvote"));
+        NotificationRequest request = requestCaptor.getValue();
+        assertEquals("author@example.com", request.getRecipient());
+        assertEquals("review-upvoted", request.getTemplateName());
     }
 
     @Test
-    void handleReviewVotedBuildsDownvoteNotification() {
-        UUID userId = UUID.randomUUID();
-        UUID reviewId = UUID.randomUUID();
-        when(userEmailResolver.resolve(userId)).thenReturn("user@example.com");
-
+    void handleReviewVotedSkipsDownvote() {
         domainNotificationService.handleReviewVoted(Map.of(
-            "userId", userId.toString(),
-            "reviewId", reviewId.toString(),
+            "userId", UUID.randomUUID().toString(),
+            "reviewAuthorId", UUID.randomUUID().toString(),
+            "reviewId", UUID.randomUUID().toString(),
             "value", -1
         ));
 
-        ArgumentCaptor<NotificationRequest> requestCaptor = ArgumentCaptor.forClass(NotificationRequest.class);
-        verify(notificationService).queueNotification(requestCaptor.capture());
-        String reviewText = String.valueOf(requestCaptor.getValue().getTemplateVariables().get("reviewText"));
-        assertTrue(reviewText.contains("downvote"));
+        verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void handleReviewVotedSkipsSelfUpvote() {
+        UUID userId = UUID.randomUUID();
+        domainNotificationService.handleReviewVoted(Map.of(
+            "userId", userId.toString(),
+            "reviewAuthorId", userId.toString(),
+            "reviewId", UUID.randomUUID().toString(),
+            "value", 1
+        ));
+
+        verifyNoInteractions(notificationService);
     }
 }
-

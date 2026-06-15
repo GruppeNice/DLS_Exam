@@ -1,15 +1,27 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import * as userApi from "@/api/user";
+
+const USER_SERVICE_URL = import.meta.env.VITE_USER_SERVICE_URL ?? "http://localhost:8081";
 
 export function LoginPage() {
   const { login, register, isAuthenticated } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [googleOAuthEnabled, setGoogleOAuthEnabled] = useState(false);
   const [email, setEmail] = useState("demo@dls.local");
   const [password, setPassword] = useState("password123");
   const [displayName, setDisplayName] = useState("Demo User");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    void userApi.getGoogleOAuthStatus().then((result) => {
+      if (result.ok && result.data?.enabled) {
+        setGoogleOAuthEnabled(true);
+      }
+    });
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -94,6 +106,18 @@ export function LoginPage() {
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
           </button>
+
+          {googleOAuthEnabled && mode === "login" && (
+            <>
+              <p className="login-divider">or</p>
+              <a
+                className="btn btn-secondary btn-block"
+                href={userApi.googleOAuthAuthorizationUrl(USER_SERVICE_URL)}
+              >
+                Continue with Google
+              </a>
+            </>
+          )}
         </form>
       </div>
     </div>

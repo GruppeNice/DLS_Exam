@@ -1,0 +1,87 @@
+# KEDA ScaledJob: one short-lived pod per message on notification-queue.
+# Requires KEDA installed in the cluster (see infra/k8s/README.md §5).
+#
+# Apply after dls-local.yaml:
+#   kubectl apply -f infra/k8s/engagement-scaledjob.yaml
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-trigger-auth
+spec:
+  secretTargetRef:
+    - parameter: username
+      name: dls-secrets
+      key: RABBITMQ_USERNAME
+    - parameter: password
+      name: dls-secrets
+      key: RABBITMQ_PASSWORD
+
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: engagement-notification-worker
+spec:
+  pollingInterval: 5
+  maxReplicaCount: 10
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  scalingStrategy:
+    strategy: default
+  jobTargetRef:
+    parallelism: 1
+    completions: 1
+    backoffLimit: 1
+    template:
+      spec:
+        restartPolicy: Never
+        containers:
+          - name: engagement-worker
+            image: dls/engagement-service:local
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: ENGAGEMENT_MODE
+                value: job
+              - name: DB_URL
+                value: jdbc:mysql://engagement-service-db:3306/engagement_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
+              - name: DB_USERNAME
+                value: engagement_user
+              - name: DB_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: dls-secrets
+                    key: ENGAGEMENT_DB_PASSWORD
+              - name: RABBITMQ_HOST
+                value: rabbitmq
+              - name: RABBITMQ_PORT
+                value: "5672"
+              - name: RABBITMQ_USERNAME
+                valueFrom:
+                  secretKeyRef:
+                    name: dls-secrets
+                    key: RABBITMQ_USERNAME
+              - name: RABBITMQ_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: dls-secrets
+                    key: RABBITMQ_PASSWORD
+              - name: SPRING_MAIL_HOST
+                value: mailhog
+              - name: SPRING_MAIL_PORT
+                value: "1025"
+              - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+                value: "false"
+              - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+                value: "false"
+              - name: SPRING_MAIL_FROM
+                value: noreply@dls.local
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: amqp
+        host: amqp://rabbitmq:5672
+        queueName: notification-queue
+        mode: QueueLength
+        value: "1"
+      authenticationRef:
+        name: rabbitmq-trigger-auth

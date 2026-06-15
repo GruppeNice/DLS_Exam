@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<h1>Someone liked your review</h1>
+<p>Hi <span th:text="${name}">viewer</span>,</p>
+<p>Your review for <strong th:text="${title}">a title</strong> received an upvote.</p>
+<blockquote th:text="${reviewText}">Review text</blockquote>
+<p>Thanks for contributing to the DLS community.</p>
+</body>
+</html>

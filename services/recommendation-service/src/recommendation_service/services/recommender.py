@@ -17,9 +17,13 @@ class RecommenderService:
 
     def get_recommendations_for_user(self, db: Session, user_id: UUID) -> RecommendationListResponse:
         cached = db.scalar(select(UserRecommendation).where(UserRecommendation.user_id == str(user_id)))
-        if cached is not None:
+        if cached is not None and cached.content_ids:
             items = [
-                RecommendationItem(content_id=UUID(content_id), score=1.0, reason="precomputed_nmf")
+                RecommendationItem(
+                    content_id=UUID(content_id),
+                    score=1.0,
+                    reason="nmf_rewatch" if self._user_has_interacted(db, user_id, content_id) else "precomputed_nmf",
+                )
                 for content_id in cached.content_ids[: self.list_size]
             ]
             return RecommendationListResponse(
@@ -29,12 +33,11 @@ class RecommenderService:
                 model_type="nmf_collaborative_filtering",
             )
 
-        live_items = self._generate_live_recommendations(db, user_id)
         return RecommendationListResponse(
             user_id=user_id,
-            items=live_items,
+            items=[],
             generated_at=datetime.now(timezone.utc),
-            model_type="fallback_trending",
+            model_type="awaiting_retrain",
         )
 
     def retrain(self, db: Session) -> ModelRun:
@@ -44,9 +47,9 @@ class RecommenderService:
         db.refresh(run)
 
         interactions = db.scalars(select(UserContentInteraction)).all()
-        if len(interactions) < 3:
+        if not interactions:
             run.status = "SKIPPED"
-            run.details = "Not enough interaction data"
+            run.details = "No interactions yet — watch or rate titles first"
             run.completed_at = datetime.now(timezone.utc)
             db.commit()
             return run
@@ -91,6 +94,10 @@ class RecommenderService:
 
             if not recommended:
                 recommended = self._fallback_content_ids(db, watched)
+            if not recommended:
+                recommended = [
+                    content_ids[idx] for idx in np.argsort(scores)[::-1][: self.list_size]
+                ]
 
             existing = db.scalar(select(UserRecommendation).where(UserRecommendation.user_id == user_key))
             if existing is None:
@@ -107,29 +114,6 @@ class RecommenderService:
         db.refresh(run)
         return run
 
-    def _generate_live_recommendations(self, db: Session, user_id: UUID) -> list[RecommendationItem]:
-        user_key = str(user_id)
-        watched_rows = db.scalars(
-            select(UserContentInteraction).where(UserContentInteraction.user_id == user_key)
-        ).all()
-        watched = {row.content_id for row in watched_rows}
-
-        trending = db.scalars(select(TrendingContent).order_by(TrendingContent.score.desc()).limit(self.list_size * 2)).all()
-        items: list[RecommendationItem] = []
-        for row in trending:
-            if row.content_id in watched:
-                continue
-            items.append(
-                RecommendationItem(
-                    content_id=UUID(row.content_id),
-                    score=row.score,
-                    reason="fallback_trending",
-                )
-            )
-            if len(items) >= self.list_size:
-                break
-        return items
-
     def _fallback_content_ids(self, db: Session, watched: set[str]) -> list[str]:
         trending = db.scalars(select(TrendingContent).order_by(TrendingContent.score.desc()).limit(self.list_size * 2)).all()
         result: list[str] = []
@@ -140,3 +124,14 @@ class RecommenderService:
             if len(result) >= self.list_size:
                 break
         return result
+
+    def _user_has_interacted(self, db: Session, user_id: UUID, content_id: str) -> bool:
+        return (
+            db.scalar(
+                select(UserContentInteraction).where(
+                    UserContentInteraction.user_id == str(user_id),
+                    UserContentInteraction.content_id == content_id,
+                )
+            )
+            is not None
+        )

@@ -977,6 +977,8 @@ spec:
               value: demo@dls.local
             - name: ENGAGEMENT_BROADCAST_EMAIL
               value: demo@dls.local
+            - name: ENGAGEMENT_MODE
+              value: server
 
 ---
 apiVersion: v1

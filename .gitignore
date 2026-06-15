@@ -1,3 +1,7 @@
+# Local secrets (OAuth, etc.)
+infra/docker/.env
+**/.env
+
 # Maven build output
 **/target/
 

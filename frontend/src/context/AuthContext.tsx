@@ -23,6 +23,7 @@ interface AuthContextValue {
   user: UserProfile | null;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<string | null>;
+  completeOAuthLogin: (token: string) => Promise<string | null>;
   register: (
     email: string,
     password: string,
@@ -90,6 +91,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applyAuth],
   );
 
+  const completeOAuthLogin = useCallback(
+    async (token: string) => {
+      const result = await userApi.completeOAuth(token);
+      if (!result.ok || !result.data) {
+        return result.error ?? "Google sign-in failed";
+      }
+      applyAuth(result.data);
+      return null;
+    },
+    [applyAuth],
+  );
+
   const register = useCallback(
     async (email: string, password: string, displayName: string) => {
       const result = await userApi.register(email, password, displayName);
@@ -138,11 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: Boolean(token && user),
       login,
+      completeOAuthLogin,
       register,
       logout,
       refreshProfile,
     }),
-    [token, user, login, register, logout, refreshProfile],
+    [token, user, login, completeOAuthLogin, register, logout, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -72,6 +72,9 @@ public class UserService {
     }
 
     public UserProfileResponse me(UserPrincipal principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+        }
         User user = userRepository.findById(principal.getId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         return toProfile(user);
@@ -99,6 +102,28 @@ public class UserService {
         // Intentionally noop for now. In real flow, this emits a reset request event
         // and/or sends an email through Engagement Service.
         userRepository.findByEmailIgnoreCase(email);
+    }
+
+    @Transactional
+    public AuthResponse loginOrRegisterFromOAuth(String email, String displayName) {
+        String normalizedEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElseGet(() -> {
+            User newUser = new User();
+            newUser.setEmail(normalizedEmail);
+            newUser.setDisplayName(
+                displayName != null && !displayName.isBlank() ? displayName.trim() : normalizedEmail
+            );
+            newUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+            newUser.setStatus(AccountStatus.ACTIVE);
+            newUser.setRoles(Set.of("USER"));
+            User saved = userRepository.save(newUser);
+            eventPublisher.userRegistered(saved.getId(), saved.getEmail());
+            return saved;
+        });
+        if (user.getStatus() != AccountStatus.ACTIVE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Account is not active");
+        }
+        return buildAuthResponse(user);
     }
 
     private AuthResponse buildAuthResponse(User user) {

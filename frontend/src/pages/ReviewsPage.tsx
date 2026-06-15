@@ -24,6 +24,88 @@ function StarRating({ value }: { value: number }) {
   );
 }
 
+function ReviewVoteBar({
+  review,
+  currentUserId,
+  titleName,
+}: {
+  review: Review;
+  currentUserId?: string;
+  titleName?: string;
+}) {
+  const [votes, setVotes] = useState<reviewApi.ReviewVote[]>([]);
+  const [loadingVotes, setLoadingVotes] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [voteMessage, setVoteMessage] = useState<string | null>(null);
+  const [voteError, setVoteError] = useState<string | null>(null);
+
+  const isOwnReview = review.userId === currentUserId;
+
+  const loadVotes = useCallback(async () => {
+    setLoadingVotes(true);
+    const result = await reviewApi.getReviewVotes(review.id);
+    setVotes(result.ok && result.data ? result.data : []);
+    setLoadingVotes(false);
+  }, [review.id]);
+
+  useEffect(() => {
+    void loadVotes();
+  }, [loadVotes]);
+
+  const upvotes = votes.filter((vote) => vote.value === 1).length;
+  const downvotes = votes.filter((vote) => vote.value === -1).length;
+  const myVote = votes.find((vote) => vote.userId === currentUserId)?.value;
+
+  async function castVote(value: 1 | -1) {
+    if (!currentUserId || isOwnReview) return;
+    setSubmitting(true);
+    setVoteMessage(null);
+    setVoteError(null);
+    const result = await reviewApi.addReviewVote(currentUserId, review.id, value);
+    if (result.ok) {
+      await loadVotes();
+      if (value === 1) {
+        setVoteMessage(
+          `Upvote recorded. If this is someone else's review, they get an email via MailHog${titleName ? ` (${titleName})` : ""}.`,
+        );
+      } else {
+        setVoteMessage("Downvote recorded.");
+      }
+    } else {
+      setVoteError(result.error ?? "Could not record vote");
+    }
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="review-vote-bar">
+      <div className="review-vote-actions">
+        <button
+          type="button"
+          className={`vote-btn up ${myVote === 1 ? "active" : ""}`}
+          onClick={() => void castVote(1)}
+          disabled={!currentUserId || isOwnReview || submitting || loadingVotes}
+          title={isOwnReview ? "You cannot vote on your own review" : "Upvote"}
+        >
+          ▲ {upvotes}
+        </button>
+        <button
+          type="button"
+          className={`vote-btn down ${myVote === -1 ? "active" : ""}`}
+          onClick={() => void castVote(-1)}
+          disabled={!currentUserId || isOwnReview || submitting || loadingVotes}
+          title={isOwnReview ? "You cannot vote on your own review" : "Downvote"}
+        >
+          ▼ {downvotes}
+        </button>
+      </div>
+      {isOwnReview && <span className="muted review-vote-hint">Your review</span>}
+      {voteMessage && <p className="muted review-vote-msg">{voteMessage}</p>}
+      {voteError && <p className="form-error review-vote-msg">{voteError}</p>}
+    </div>
+  );
+}
+
 export function ReviewsPage() {
   const { user } = useAuth();
   const { items } = useCatalog();
@@ -211,6 +293,11 @@ export function ReviewsPage() {
                   {review.userId === user?.id && <span className="badge badge-ok">Yours</span>}
                 </div>
                 <p className="review-card-body">{review.reviewText}</p>
+                <ReviewVoteBar
+                  review={review}
+                  currentUserId={user?.id}
+                  titleName={selected?.title}
+                />
                 {review.createdAt && (
                   <p className="muted review-card-date">{review.createdAt}</p>
                 )}
@@ -219,7 +306,7 @@ export function ReviewsPage() {
           </ul>
 
           <p className="muted review-mailhog-hint">
-            After you publish, open{" "}
+            After you publish or upvote someone else&apos;s review, open{" "}
             <a href="http://localhost:8025" target="_blank" rel="noreferrer">MailHog</a>
             {" "}to see the notification email.
           </p>
