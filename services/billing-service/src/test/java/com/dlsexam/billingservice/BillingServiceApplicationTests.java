@@ -1,7 +1,9 @@
 package com.dlsexam.billingservice;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration")
@@ -15,7 +17,12 @@ import org.springframework.test.context.TestPropertySource;
 })
 class BillingServiceApplicationTests {
 
+    @MockitoBean
+    private RabbitTemplate rabbitTemplate;
+
     @Test
     void contextLoads() {
+        // Just verify that the application context loads without trying to connect to RabbitMQ
+        assert rabbitTemplate != null;
     }
 }
