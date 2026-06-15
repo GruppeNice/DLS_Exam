@@ -1,8 +1,10 @@
 package com.dlsexam.streamingservice;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration")
 @TestPropertySource(properties = {
@@ -15,6 +17,9 @@ import org.springframework.test.context.TestPropertySource;
     "app.billing-service.base-url=http://localhost:8084"
 })
 class StreamingServiceApplicationTests {
+
+    @MockitoBean
+    private RabbitTemplate rabbitTemplate;
 
     @Test
     void contextLoads() {
