@@ -75,4 +75,8 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=GruppeNice_DLS_Exam
+        run: >
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
+          -Dsonar.projectKey=GruppeNice_DLS_Exam
+          -Dsonar.organization=gruppenice
+          -Dsonar.host.url=https://sonarcloud.io
