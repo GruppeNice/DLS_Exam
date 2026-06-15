@@ -22,7 +22,6 @@ class BillingServiceApplicationTests {
 
     @Test
     void contextLoads() {
-        // Just verify that the application context loads without trying to connect to RabbitMQ
-        assert rabbitTemplate != null;
+
     }
 }

@@ -2,9 +2,7 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "tests" ]
 
 jobs:
   test-services:
@@ -19,6 +17,10 @@ jobs:
             pom: services/review-rating-service/pom.xml
           - name: engagement-service
             pom: services/engagement-service/pom.xml
+          - name: billing-service
+            pom: services/billing-service/pom.xml
+          - name: catalog-service
+            pom: services/catalog-service/pom.xml
 
     name: Test ${{ matrix.name }}
 
