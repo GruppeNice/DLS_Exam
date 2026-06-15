@@ -23,6 +23,8 @@
         <module>services/billing-service</module>
         <module>services/streaming-service</module>
         <module>services/catalog-service</module>
+        <module>services/review-rating-service</module>
+        <module>services/engagement-service</module>
     </modules>
 
     <properties>

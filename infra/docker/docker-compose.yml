@@ -8,10 +8,12 @@ x-healthcheck-rabbitmq: &healthcheck-rabbitmq
   timeout: 5s
   retries: 10
 
-x-jwt-secret: &jwt-secret
-  JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
-
 x-observability-env: &observability-env
+  ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+  TRACING_SAMPLE_PROBABILITY: "1.0"
+
+x-service-common-env: &service-common-env
+  JWT_SECRET_BASE64: VGVzdGluZ0Rldk9ubHlTZWNyZXRLZXlGb3JKV1QxMjM0NTY3ODkwMTIzNDU2Nzg5MDEyMw==
   ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
   TRACING_SAMPLE_PROBABILITY: "1.0"
 
@@ -159,7 +161,7 @@ services:
     container_name: user-service
     restart: unless-stopped
     environment:
-      <<: [*jwt-secret, *observability-env]
+      <<: *service-common-env
       SERVER_PORT: 8081
       DB_URL: jdbc:mysql://user-service-db:3306/user_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: user_user
@@ -188,7 +190,7 @@ services:
         SERVICE_PORT: 8084
     container_name: billing-service
     environment:
-      <<: [*jwt-secret, *observability-env]
+      <<: *service-common-env
       SERVER_PORT: 8084
       DB_URL: jdbc:mysql://billing-service-db:3306/billing_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: billing_user
@@ -217,7 +219,7 @@ services:
         SERVICE_PORT: 8083
     container_name: streaming-service
     environment:
-      <<: [*jwt-secret, *observability-env]
+      <<: *service-common-env
       SERVER_PORT: 8083
       DB_URL: jdbc:mysql://streaming-service-db:3306/streaming_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: streaming_user
@@ -249,7 +251,7 @@ services:
     container_name: recommendation-service
     restart: unless-stopped
     environment:
-      <<: [*jwt-secret, *observability-env]
+      <<: *service-common-env
       SERVER_PORT: 8090
       DATABASE_URL: mysql+pymysql://recommendation_user:recommendation_password@recommendation-service-db:3306/recommendation_db
       RABBITMQ_HOST: rabbitmq
@@ -279,7 +281,7 @@ services:
         SERVICE_PORT: 8082
     container_name: catalog-service
     environment:
-      <<: [*jwt-secret, *observability-env]
+      <<: *service-common-env
       SERVER_PORT: 8082
       DB_URL: jdbc:mysql://catalog-service-db:3306/catalog_db?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC
       DB_USERNAME: catalog_user
