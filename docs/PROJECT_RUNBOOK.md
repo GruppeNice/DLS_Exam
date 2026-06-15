@@ -4,10 +4,10 @@ This document is the operational reference for how the entire monorepo is **desi
 
 Sources of truth:
 
-- `docs/Large Systems - Architecture & Stack docs.md`
-- `docs/Large Systems - Architecture & Stack docs2.md`
+- `docs/Large Systems - Architecture & Stack almostfinal.md` (report)
 - `docs/roadmap.md`
 - Per-service `README.md` and `ARCHITECTURE_OVERVIEW.md` (where present)
+- `infra/k8s/README.md`, `infra/docker/README.md`
 
 ---
 
@@ -37,6 +37,7 @@ flowchart TB
 
     subgraph messaging [Messaging Layer]
         MQ[RabbitMQ]
+        NQ[notification-queue]
     end
 
     subgraph data [Data Layer]
@@ -46,16 +47,20 @@ flowchart TB
         DBB[(Billing DB)]
         DBR[(Review DB)]
         DBREC[(Recommendation DB)]
+        DBE[(Engagement DB)]
     end
 
-    FE --> GW
-    GW --> US
-    GW --> CS
-    GW --> SS
-    GW --> BS
-    GW --> RS
-    GW --> REC
-    GW --> ES
+    subgraph k8s_workers [K8s only - optional]
+        KEDA[KEDA ScaledJob workers]
+    end
+
+    FE --> US
+    FE --> CS
+    FE --> SS
+    FE --> BS
+    FE --> RS
+    FE --> REC
+    FE --> ES
 
     US --> DBU
     CS --> DBC
@@ -63,6 +68,7 @@ flowchart TB
     BS --> DBB
     RS --> DBR
     REC --> DBREC
+    ES --> DBE
 
     US --> MQ
     CS --> MQ
@@ -71,6 +77,8 @@ flowchart TB
     RS --> MQ
     REC --> MQ
     ES --> MQ
+    ES --> NQ
+    NQ -.-> KEDA
 ```
 
 ---
@@ -79,19 +87,19 @@ flowchart TB
 
 | Layer / Service | Status | Notes |
 |-----------------|--------|-------|
-| `user-service` | Implemented | JWT auth, Flyway schema, demo user seed, RabbitMQ events |
+| `user-service` | Implemented | JWT auth, optional Google OAuth 2.0, Flyway schema, demo user seed, RabbitMQ events |
 | `billing-service` | Implemented | Plans, subscriptions, payments, invoices, saga activation |
 | `streaming-service` | Implemented | Playback sessions, progress, subscription gate, DRM sim |
 | `catalog-service` | Implemented | GraphQL browse/search, seeded catalog, review event consumer |
-| `review-rating-service` | Implemented | REST ratings/reviews, Flyway + seeds, RabbitMQ publisher |
-| `recommendation-service` | Implemented | Python/FastAPI, Scikit-learn NMF, RabbitMQ consumer, trending API |
-| `engagement-service` | Implemented | REST notifications, domain-event consumers, MailHog email |
-| `frontend/` | Implemented | React + TypeScript test UI (Stream Console) |
+| `review-rating-service` | Implemented | REST ratings/reviews/votes, Flyway + seeds, RabbitMQ publisher (`review.voted`) |
+| `recommendation-service` | Implemented | Python/FastAPI, NMF collaborative filtering, trending API, manual retrain in Docker |
+| `engagement-service` | Implemented | Domain-event consumers, `notification-queue`, MailHog email, KEDA ScaledJob (K8s) |
+| `frontend/` | Implemented | React + TypeScript Stream Console (OAuth callback, review votes, recommendations UI) |
 | `infra/docker` | Implemented | Unified compose: 7 services + frontend + RabbitMQ + MailHog + MySQL |
-| `infra/k8s` | Implemented (local) | `dls-local.yaml` + `build-images.ps1` for Minikube/Docker Desktop |
+| `infra/k8s` | Implemented (local) | `dls-local.yaml`, `engagement-scaledjob.yaml`, `build-images.ps1` |
 | `infra/messaging` | Implemented | `TOPOLOGY.md`, `definitions.json`, broker import docs |
 | `infra/observability` | Implemented | Prometheus, Grafana, Loki, Promtail, Zipkin (optional compose overlay) |
-| `infra/ci-cd` | Scaffold only | GitHub Actions planned |
+| `infra/ci-cd` | Partial | GitHub Actions: per-service Maven tests + SonarCloud analysis (`.github/workflows/maven.yml`) |
 | `packages/contracts` | Implemented | Consolidated AsyncAPI (`dls-platform-events.yaml`) + JSON event schemas |
 | API Gateway | Not started | Spring Cloud Gateway planned; frontend/nginx proxy used today |
 
@@ -109,13 +117,34 @@ flowchart TB
 | RabbitMQ | `5672` / UI `15672` |
 | Exchange | `user.events` |
 | API style | REST |
-| Auth | Issues JWT; owns credentials |
+| Auth | Issues JWT; owns credentials; optional Google OAuth 2.0 |
 
 **Key endpoints**
 
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
 - `GET /api/v1/auth/me`
+- `GET /api/v1/oauth/google/status` — whether Google sign-in is enabled
+- `GET /oauth2/authorization/google` — start OAuth (when enabled; browser redirect)
+
+**Google OAuth (optional)**
+
+1. Copy `infra/docker/.env.example` → `infra/docker/.env` (or set vars in `services/user-service/config/.env` for local Maven).
+2. In [Google Cloud Console](https://console.cloud.google.com/), create OAuth 2.0 credentials.
+3. Authorized redirect URI: `http://localhost:8081/login/oauth2/code/google`
+4. Set:
+
+```bash
+GOOGLE_OAUTH_ENABLED=true
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_OAUTH_FRONTEND_REDIRECT=http://localhost:3000/oauth/callback
+```
+
+5. Restart `user-service`. Stream Console login shows **Continue with Google**.
+6. Flow: browser → User Service Google login → redirect to `/oauth/callback?token=...` → frontend stores JWT via `GET /api/v1/auth/me`.
+
+OAuth users get a new platform UUID on first login (no account linking by email yet). Password login and OAuth both issue the same JWT format for downstream services.
 
 **Events produced**
 
@@ -231,7 +260,17 @@ docker compose up --build
 | AsyncAPI stub | `services/review-rating-service/api/asyncapi.yaml` |
 | Metrics | `GET /actuator/prometheus` |
 
-**Events produced:** `content.rated`, `content.reviewed` on exchange `review.events`.
+**Key endpoints**
+
+- Ratings and reviews (CRUD) — see Swagger at `http://localhost:8085/swagger-ui.html`
+- `GET /review-votes/{reviewId}` — list votes on a review
+- `POST /review-votes/add` — upvote (`value: 1`) or downvote (`value: -1`); upserts per user; blocks self-votes
+
+**Events produced:** `content.rated`, `content.reviewed`, `review.voted` on exchange `review.events`.
+
+`review.voted` includes `reviewAuthorId` so Engagement can email the author on upvotes only.
+
+**Migrations:** Flyway V4 is a Java migration (`V4__RenameReviewVoteValueColumn.java`) — idempotent rename for legacy volumes; safe on fresh MySQL and H2 in CI.
 
 ---
 
@@ -253,16 +292,18 @@ docker compose up --build
 - `content.rated` from `review.events`
 
 **REST endpoints:**
-- `GET /api/v1/recommendations/me` — personalized list (JWT)
-- `GET /api/v1/recommendations/trending` — trending rankings
-- `POST /api/v1/recommendations/retrain` — manual model retrain
+- `GET /api/v1/recommendations/me` — personalised list (JWT); empty with `model_type: awaiting_retrain` until retrain
+- `GET /api/v1/recommendations/trending` — live trending rankings (no retrain required)
+- `POST /api/v1/recommendations/retrain` — manual model retrain (JWT)
 - `POST /api/v1/recommendations/interactions` — dev/test ingest
 
 **ML pipeline:**
-- interaction weights aggregated from events
+- Interaction weights aggregated from events
 - Scikit-learn NMF collaborative filtering
-- precomputed lists stored per user
-- periodic retraining via APScheduler
+- Precomputed lists stored per user after retrain
+- Docker Compose sets `MODEL_RETRAIN_INTERVAL_MINUTES: 0` — retrain is manual via UI or API (no background scheduler in default stack)
+
+**UX note:** Trending updates live from watch/rating activity. **For me** only populates after **Retrain model** on the Recommendations page.
 
 **Run:**
 
@@ -284,11 +325,19 @@ docker compose up --build
 | Mail | MailHog in local compose (`8025` UI, SMTP `1025`) |
 | AsyncAPI stub | `services/engagement-service/api/asyncapi.yaml` |
 | Metrics | `GET /actuator/prometheus` |
+| Run modes | `ENGAGEMENT_MODE=server` (default) or `job` (KEDA worker) |
 
-**Consumes:** `subscription.activated`, `playback.stopped`, `content.created`, `content.reviewed` (plus internal `notification-queue`).  
-**Delivers:** email notifications via Thymeleaf templates.
+**Consumes (domain events):** `subscription.activated`, `playback.stopped`, `content.created`, `content.reviewed`, `review.voted`.
 
-Scaling with KEDA ScaledJob in Kubernetes is planned for production-style deployments.
+**Internal queue:** `notification-queue` — notification IDs queued for outbound delivery.
+
+**Delivers:** email via Thymeleaf templates (`welcome`, `continue-watching`, `new-content`, `review-upvoted`, etc.).
+
+**Review upvote emails:** on `review.voted` with `voteValue: 1`, emails the **review author** (not the voter); skips downvotes and self-upvotes. Demo broadcasts use `ENGAGEMENT_BROADCAST_EMAIL=demo@dls.local`.
+
+**Docker Compose:** runs in **server mode** — long-running service with `@RabbitListener` on `notification-queue` and domain-event consumers.
+
+**Kubernetes:** Engagement **Deployment** stays in `server` mode; **KEDA ScaledJob** (`infra/k8s/engagement-scaledjob.yaml`) runs `ENGAGEMENT_MODE=job` workers that process one queue message per pod and exit. See §4.2 and §11.
 
 ---
 
@@ -340,6 +389,18 @@ Start the main platform first if observability was brought up alone — Java ser
 
 Open **http://localhost:3000** for the Stream Console test UI.
 
+### 4.0 Google OAuth via Docker Compose
+
+`user-service` loads optional OAuth settings from `infra/docker/.env` (`env_file`, not required):
+
+```bash
+cp infra/docker/.env.example infra/docker/.env
+# edit GOOGLE_OAUTH_ENABLED, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+docker compose -f infra/docker/docker-compose.yml up --build user-service
+```
+
+When OAuth is disabled (default), email/password login works unchanged.
+
 **Network troubleshooting:** if services fail with `UnknownHostException` for `user-service-db` or similar, old containers may be on a different network. Run `docker compose -f infra/docker/docker-compose.yml down` then `up --build` again. See `infra/docker/README.md`.
 
 Per-service `docker-compose.yml` files include the shared compose definition for convenience.
@@ -360,25 +421,59 @@ Flyway migrations run when each Java service starts against an empty database vo
 
 ### 4.2 Kubernetes (local)
 
+Full stack manifest: `infra/k8s/dls-local.yaml` (7 services + frontend + 7 MySQL + RabbitMQ + MailHog + `dls-secrets`).
+
 ```powershell
-.\infra\k8s\build-images.ps1          # or -LoadToMinikube
+.\infra\k8s\build-images.ps1          # tags dls/<service>:local
 kubectl apply -f infra/k8s/dls-local.yaml
 kubectl get pods -w
-kubectl get svc
+kubectl get svc                       # NodePort access on localhost
 ```
 
-See `infra/k8s/README.md` for NodePort access and MailHog port-forward.
+**KEDA ScaledJob (Engagement notification workers)** — apply after the main stack is healthy:
+
+```bash
+# Install KEDA once per cluster (see infra/k8s/README.md for version pin)
+kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v2.16.1/keda-2.16.1.yaml
+
+kubectl apply -f infra/k8s/engagement-scaledjob.yaml
+kubectl get scaledjob
+kubectl get jobs -w
+```
+
+- Engagement **Deployment** uses `ENGAGEMENT_MODE=server` (API + domain events).
+- **ScaledJob** pods use `ENGAGEMENT_MODE=job` — one message from `notification-queue`, send email, exit.
+- KEDA scales jobs when `notification-queue` depth ≥ 1 (`maxReplicaCount: 10`).
+
+**Tear down workers only:** `kubectl delete -f infra/k8s/engagement-scaledjob.yaml`
+
+See `infra/k8s/README.md` for NodePort table, Minikube image load (`-LoadToMinikube`), and MailHog port-forward.
+
+**Local K8s limitations:** DB volumes use `emptyDir` (data lost on pod restart); no readiness probes yet; observability stack not included in K8s manifests.
 
 ---
 
 ## 5. Authentication flow
 
-1. Client registers/logs in via **User Service** → receives JWT (`Bearer` token).
+### 5.1 Email / password (default)
+
+1. Client registers or logs in via **User Service** → receives JWT (`Bearer` token).
 2. JWT contains `sub` (email), `uid` (user UUID), `roles`.
 3. All protected backend services validate the same JWT secret (`JWT_SECRET_BASE64`).
-4. **Planned:** API Gateway validates JWT once at the edge and forwards identity headers.
+4. Demo user: `demo@dls.local` / `password123` (see §4.1).
 
-Shared dev secret (all services): see each service `config/.env.example`.
+### 5.2 Google OAuth (optional)
+
+1. Frontend checks `GET /api/v1/oauth/google/status` → if `enabled: true`, shows **Continue with Google**.
+2. User visits `http://localhost:8081/oauth2/authorization/google` (full redirect to Google).
+3. Google redirects to User Service `/login/oauth2/code/google`.
+4. User Service creates or loads user, issues JWT, invalidates OAuth session, redirects to `GOOGLE_OAUTH_FRONTEND_REDIRECT` with `?token=...&expiresIn=...&email=...`.
+5. Frontend `/oauth/callback` stores token and loads profile via `GET /api/v1/auth/me`.
+6. Downstream services see the same JWT as password login — no per-service OAuth integration.
+
+**Planned:** API Gateway validates JWT once at the edge and forwards identity headers.
+
+Shared dev secret (all services): see each service `config/.env.example` or `dls-secrets` in K8s.
 
 ---
 
@@ -392,9 +487,9 @@ Shared dev secret (all services): see each service `config/.env.example`.
 | Billing Service | `subscription.activated`, `subscription.cancelled`, `payment.succeeded`, `payment.failed` |
 | Streaming Service | `playback.started`, `playback.stopped`, `playback.progress.updated` |
 | Catalog Service | `content.created`, `content.updated`, `content.removed` |
-| Review Service | `content.rated`, `content.reviewed`, `review.moderated` (moderated planned) |
+| Review Service | `content.rated`, `content.reviewed`, `review.voted` |
 
-**Consumers today:** Recommendation (playback, billing, review), Catalog (review), Engagement (`subscription.activated`, `playback.stopped`, `content.created`, `content.reviewed`).
+**Consumers today:** Recommendation (playback, billing, review), Catalog (review), Engagement (billing, streaming, catalog, review including `review.voted`).
 
 **Exception (synchronous read):** Streaming calls Billing `GET /subscriptions/active/{userId}` before playback. This is an intentional gate, not primary inter-service communication.
 
@@ -414,7 +509,15 @@ Services declare exchanges/queues at startup via Spring `RabbitAdmin` or the Pyt
 
 ## 7. End-to-end happy path
 
-**Quickest path:** `docker compose -f infra/docker/docker-compose.yml up --build` → open http://localhost:3000 → sign in as `demo@dls.local` / `password123` → Overview → **Run demo flow**.
+**Quickest path:** `docker compose -f infra/docker/docker-compose.yml up --build` → open http://localhost:3000 → sign in as `demo@dls.local` / `password123` (or Google OAuth if configured) → Overview → **Run demo flow**.
+
+**Extended demos (UI):**
+
+| Flow | Where | What to verify |
+|------|-------|----------------|
+| Recommendations | Recommendations page | **Trending** updates from activity; **For me** empty until **Retrain model** |
+| Review votes | Reviews page | Upvote another user's review → MailHog email to author (`review-upvoted`) |
+| OAuth | Login page | **Continue with Google** when `GOOGLE_OAUTH_ENABLED=true` |
 
 Manual API sequence (all services running):
 
@@ -446,7 +549,17 @@ Manual API sequence (all services running):
    Header: Authorization: Bearer <jwt>
 ```
 
-Check RabbitMQ management UI (`15672`) and MailHog (`8025`) for async side effects.
+Check RabbitMQ management UI (`15672`, `guest`/`guest`) and MailHog (`8025`) for async side effects (subscription welcome, continue-watching, review upvote emails).
+
+**Review upvote (API):**
+
+```text
+POST http://localhost:8085/review-votes/add
+Header: Authorization: Bearer <jwt>
+Body: { "userId": "<voter-uuid>", "reviewId": "<review-uuid>", "value": 1 }
+```
+
+Use a review not authored by the voter. Check MailHog for `review-upvoted` to the author.
 
 **With observability running:** after the demo flow, open Grafana (`http://localhost:3001`) → Explore → Loki → `{compose_service="frontend"}` to see request logs, or Zipkin (`http://localhost:9411`) to inspect cross-service traces.
 
@@ -472,7 +585,7 @@ services/<name>/
 
 ### 8.2 `frontend/` — Stream Console test UI
 
-React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx in Docker, Vite dev server locally). Not a production product UI — health checks and guided cross-service demo flow.
+React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx in Docker, Vite dev server locally). Features: login/register, Google OAuth callback (`/oauth/callback`), catalog browse, playback demo, billing, reviews with upvote/downvote, recommendations (trending + retrain), health overview.
 
 ### 8.3 `infra/` — platform operations
 
@@ -482,7 +595,7 @@ React + TypeScript + Vite. Proxies `/api/{service}/...` to backend ports (nginx 
 | `infra/k8s` | Minikube/k3s manifests, KEDA ScaledJob for Engagement |
 | `infra/messaging` | RabbitMQ topology (`TOPOLOGY.md`), broker `definitions.json` |
 | `infra/observability` | Prometheus, Grafana, Loki, Promtail, Zipkin compose overlay |
-| `infra/ci-cd` | GitHub Actions pipelines |
+| `infra/ci-cd` | GitHub Actions workflows (see §10) |
 | `infra/security` | Policies, secrets templates |
 
 ### 8.4 `packages/` — shared artifacts
@@ -565,29 +678,63 @@ See `infra/observability/README.md` for config file paths.
 
 ---
 
-## 10. CI/CD (planned)
+## 10. CI/CD
 
-Pipeline stages per assignment:
+**Implemented:** `.github/workflows/maven.yml` runs on push to `main` and `tests`.
 
-1. Compile / build (Maven, npm, pip)
-2. Unit tests
-3. Static analysis (SonarCloud/SpotBugs, ESLint, Bandit)
-4. Integration tests (Testcontainers)
-5. Docker image build + push (Docker Hub / Artifact Registry)
-6. Deploy to local K8s or cloud
+| Job | What it does |
+|-----|----------------|
+| `test-services` | Matrix: `mvn verify` on all six Java services (parallel) |
+| `build` (SonarCloud) | Root `mvn verify sonar:sonar` — static analysis via [SonarCloud](https://sonarcloud.io) (`GruppeNice_DLS_Exam` / org `gruppenice`) |
 
-Definitions will live in `infra/ci-cd/` and `.github/workflows/`.
+**Required secret:** `SONAR_TOKEN` in GitHub repository settings (SonarCloud → My Account → Security).
+
+Sonar properties are in root `pom.xml` (`sonar.projectKey`, `sonar.organization`, `sonar.host.url`).
+
+**Not in CI yet:**
+
+- `recommendation-service` (Python) — Bandit / pytest
+- `frontend` — ESLint / npm test
+- Docker image build and push
+- Deploy to Kubernetes or cloud
+- Integration tests with Testcontainers in pipeline
+
+**Planned pipeline stages (assignment):**
+
+1. ~~Compile / unit tests (Java)~~ — done
+2. ~~Static analysis (SonarCloud for Java)~~ — done
+3. Python + frontend lint/test
+4. Docker image build + registry push
+5. Deploy to local K8s or cloud (rolling updates)
+
+`infra/ci-cd/` remains a placeholder; workflows live in `.github/workflows/`.
 
 ---
 
 ## 11. Cloud / Kubernetes
 
-**Local Kubernetes** is implemented under `infra/k8s/` (`dls-local.yaml`, `build-images.ps1`). Use Docker Desktop Kubernetes or Minikube.
+**Local Kubernetes** is implemented under `infra/k8s/`:
 
-Assignment also describes (for report / future work):
+| File | Purpose |
+|------|---------|
+| `dls-local.yaml` | Full stack: Deployments, Services, Secret, NodePorts |
+| `engagement-scaledjob.yaml` | KEDA ScaledJob for `notification-queue` workers |
+| `build-images.ps1` | Build/load `dls/*:local` images |
 
-- KEDA ScaledJob for Engagement Service
+Use Docker Desktop Kubernetes or Minikube. See §4.2 for deploy steps and KEDA install.
+
+**Engagement dual-mode:**
+
+| Environment | Notification delivery |
+|-------------|----------------------|
+| Docker Compose | `ENGAGEMENT_MODE=server` — in-process `@RabbitListener` |
+| Kubernetes | Deployment (`server`) + KEDA ScaledJob (`job`) — scale-to-zero workers |
+
+Assignment / report also describes (future production work):
+
 - Managed DB and K8s on cloud (GCP Cloud SQL + GKE or AWS RDS + EKS)
+- PVCs for database persistence, readiness probes, ingress controller
+- Observability stack in cluster (Prometheus Operator, etc.)
 
 ---
 
@@ -599,8 +746,10 @@ Assignment also describes (for report / future work):
 | Event-driven architecture | RabbitMQ primary inter-service communication |
 | Saga | Billing subscription activation |
 | Idempotency | Billing payments; Streaming session start |
-| CQRS | Command-based Streaming; query-based Catalog/Recommendations (planned) |
+| CQRS | Command-based Streaming; query-based Catalog & Recommendations |
 | Immutable events | Playback events |
+| Tombstone pattern | Deleted reviews and content (`content.removed`) |
+| KEDA ScaledJob | Engagement notification workers (Kubernetes) |
 | API Gateway | Planned at edge |
 
 ---
@@ -648,11 +797,15 @@ docker compose up --build
 4. ~~`packages/contracts` — shared AsyncAPI + JSON event schemas~~ (done)
 5. ~~`infra/observability` — Prometheus, Grafana, Loki, Zipkin~~ (done)
 6. ~~`infra/messaging` — documented topology + broker definitions~~ (done)
-7. API Gateway — single frontend entry point
-8. `infra/ci-cd` — GitHub Actions pipelines
-9. Engagement KEDA ScaledJob + K8s probes/PVCs for databases
-10. Full Google OAuth callback flow
-11. `infra/security` — policies and secrets templates
+7. ~~Google OAuth (User Service + frontend callback)~~ (done)
+8. ~~Engagement KEDA ScaledJob~~ (done)
+9. ~~GitHub Actions — Java tests + SonarCloud~~ (done)
+10. ~~Review votes + `review.voted` + upvote emails~~ (done)
+11. API Gateway — single frontend entry point
+12. CI for Python (`recommendation-service`) and frontend (ESLint)
+13. K8s readiness probes, PVCs for databases, ingress
+14. OAuth account linking (same email → same user UUID)
+15. `infra/security` — production secrets templates and policies
 
 ---
 
@@ -663,11 +816,12 @@ docker compose up --build
 | Frontend | All services | REST/GraphQL via nginx/Vite proxy | User actions and demo flow |
 | Streaming | Billing | REST `GET /subscriptions/active/{userId}` | Subscription gate before playback |
 | Recommendation | Event bus | RabbitMQ consume | Build preference models and trending rankings |
-| Engagement | Event bus | RabbitMQ consume | Notifications |
+| Engagement | Event bus | RabbitMQ consume | Domain notifications; queues to `notification-queue` |
+| Engagement (K8s) | `notification-queue` | KEDA ScaledJob (`ENGAGEMENT_MODE=job`) | Scale-to-zero email workers |
 | Catalog | Event bus | RabbitMQ consume/produce | Metadata sync |
 
 **Rule:** no service reads another service's database directly.
 
 ---
 
-*Last updated: observability stack (Prometheus/Grafana/Loki/Zipkin), shared event contracts, RabbitMQ topology docs, Micrometer instrumentation on all services, `dls-platform` Docker network.*
+*Last updated: Google OAuth, review votes (`review.voted`), Engagement KEDA ScaledJob, recommendation retrain UX, SonarCloud CI, local K8s manifests (`dls-local.yaml` + `engagement-scaledjob.yaml`).*
