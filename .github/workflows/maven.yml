@@ -38,7 +38,7 @@ jobs:
         run: mvn -B -f ${{ matrix.pom }} verify
 
   build:
-    name: Analysis
+    name: Sonar connection and analysis
     runs-on: ubuntu-latest
     needs: test-services
     steps:
@@ -62,7 +62,7 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Sonar connection and analysis
+      - name: connection and analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
